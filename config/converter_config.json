@@ -2,6 +2,11 @@
   "conversion_settings": {
     "debug_mode": false,
     "output_dir": "output",
+    "supported_formats": [
+      "docx",
+      "pptx"
+    ],
+    "default_format": "docx",
     "preserve_structure": true,
     "auto_timestamp": true,
     "max_retry_attempts": 5
@@ -18,12 +23,35 @@
       ".markdown",
       ".txt"
     ],
-    "output_extension": ".docx",
+    "output_extension_docx": ".docx",
+    "output_extension_pptx": ".pptx",
     "encoding": "utf-8"
   },
   "server_settings": {
     "md2docx_project_path": "md2docx",
+    "md2pptx_project_path": "md2pptx",
     "use_subprocess": true,
     "use_python_import": false
+  },
+  "pptx_settings": {
+    "template_file": "Martin Template.pptx",
+    "slide_layout": "default",
+    "theme": "default",
+    "aspect_ratio": "16:9",
+    "font_size": 18,
+    "enable_animations": false,
+    "transition_style": "none"
+  },
+  "docx_settings": {
+    "template_file": "",
+    "font_family": "Arial",
+    "font_size": 12,
+    "line_spacing": 1.15,
+    "page_margins": {
+      "top": 2.54,
+      "bottom": 2.54,
+      "left": 2.54,
+      "right": 2.54
+    }
   }
 }

@@ -84,13 +84,16 @@ activate_virtual_environment()
 # ===== 导入依赖模块 =====
 from mcp.server.fastmcp import FastMCP
 from core import get_config_manager, get_converter_manager, reload_config
+from core.unified_converter_manager import get_unified_converter_manager
 
 # 初始化配置和转换管理器
 config_manager = get_config_manager()
-converter_manager = get_converter_manager()
+converter_manager = get_converter_manager()  # 保持向后兼容
+unified_converter_manager = get_unified_converter_manager()  # 新的统一转换器
 
 print(f"⚙️  配置管理器已初始化")
 print(f"🔄 转换管理器已初始化")
+print(f"🚀 统一转换管理器已初始化")
 
 # 创建 MCP 服务器
 mcp = FastMCP("MD2DOCX-Converter")
@@ -242,7 +245,75 @@ async def quick_config_parallel_jobs(jobs: int = 4) -> str:
         return f"❌ 设置失败: {str(e)}"
 
 @mcp.tool()
-async def quick_config_md2docx_path(project_path: str) -> str:
+async def quick_config_pptx_template(template_file: str = "Martin Template.pptx") -> str:
+    """
+    快速设置 PPTX 模板文件
+    
+    Args:
+        template_file: PPTX 模板文件路径
+        
+    Returns:
+        设置结果
+        
+    Use cases:
+        - 设置默认模板: quick_config_pptx_template()
+        - 设置自定义模板: quick_config_pptx_template("custom.pptx")
+    """
+    try:
+        config_manager.update_pptx_settings(template_file=template_file)
+        return f"✅ PPTX模板已设置为: {template_file}"
+    except Exception as e:
+        return f"❌ 设置失败: {str(e)}"
+
+@mcp.tool()
+async def quick_config_default_format(format_type: str = "docx") -> str:
+    """
+    快速设置默认输出格式
+    
+    Args:
+        format_type: 默认输出格式 (docx/pptx)
+        
+    Returns:
+        设置结果
+        
+    Use cases:
+        - 设置DOCX为默认: quick_config_default_format("docx")
+        - 设置PPTX为默认: quick_config_default_format("pptx")
+    """
+    try:
+        if format_type not in unified_converter_manager.get_supported_formats():
+            return f"❌ 不支持的格式: {format_type}. 支持的格式: {', '.join(unified_converter_manager.get_supported_formats())}"
+        
+        config_manager.update_conversion_settings(default_format=format_type)
+        return f"✅ 默认输出格式已设置为: {format_type.upper()}"
+    except Exception as e:
+        return f"❌ 设置失败: {str(e)}"
+
+@mcp.tool()
+async def quick_config_supported_formats(formats: List[str] = ["docx", "pptx"]) -> str:
+    """
+    快速设置支持的输出格式
+    
+    Args:
+        formats: 支持的格式列表
+        
+    Returns:
+        设置结果
+        
+    Use cases:
+        - 支持所有格式: quick_config_supported_formats(["docx", "pptx"])
+        - 仅支持DOCX: quick_config_supported_formats(["docx"])
+    """
+    try:
+        available_formats = unified_converter_manager.get_supported_formats()
+        invalid_formats = [f for f in formats if f not in available_formats]
+        if invalid_formats:
+            return f"❌ 不支持的格式: {', '.join(invalid_formats)}. 可用格式: {', '.join(available_formats)}"
+        
+        config_manager.update_conversion_settings(supported_formats=formats)
+        return f"✅ 支持的格式已设置为: {', '.join([f.upper() for f in formats])}"
+    except Exception as e:
+        return f"❌ 设置失败: {str(e)}"
     """
     快速设置 MD2DOCX 项目路径
     
@@ -261,7 +332,311 @@ async def quick_config_md2docx_path(project_path: str) -> str:
     except Exception as e:
         return f"❌ 设置失败: {str(e)}"
 
-# ===== 核心转换工具 =====
+# ===== 统一转换工具 =====
+
+@mcp.tool()
+async def convert_markdown(
+    input_file: str,
+    output_format: str = "docx",
+    output_file: Optional[str] = None,
+    template: Optional[str] = None,
+    debug: Optional[bool] = None
+) -> str:
+    """
+    统一的 Markdown 转换工具
+    
+    Args:
+        input_file: 输入的 Markdown 文件路径
+        output_format: 输出格式 (docx/pptx/both)
+        output_file: 输出文件路径（可选）
+        template: 模板文件路径（可选）
+        debug: 调试模式
+        
+    Returns:
+        转换结果信息
+        
+    Use cases:
+        - 转换为DOCX: convert_markdown("/path/to/file.md", "docx")
+        - 转换为PPTX: convert_markdown("/path/to/file.md", "pptx")
+        - 同时转换: convert_markdown("/path/to/file.md", "both")
+        - 使用模板: convert_markdown("/path/to/file.md", "pptx", template="custom.pptx")
+    """
+    
+    try:
+        if output_format.lower() == "both":
+            # 转换为两种格式
+            result = await unified_converter_manager.convert_multiple_formats(
+                input_file=input_file,
+                output_formats=["docx", "pptx"],
+                debug=debug
+            )
+            
+            if result['success'] > 0:
+                success_formats = [r['format'] for r in result['results'] if r['success']]
+                failed_formats = [r['format'] for r in result['results'] if not r['success']]
+                
+                message = f"""✅ 多格式转换完成!
+
+📄 输入文件: {input_file}
+📊 转换统计: 成功 {result['success']}, 失败 {result['failed']}
+✅ 成功格式: {', '.join(success_formats).upper()}"""
+                
+                if failed_formats:
+                    message += f"\n❌ 失败格式: {', '.join(failed_formats).upper()}"
+                
+                message += f"\n💬 消息: {result['message']}"
+                
+                # 添加详细结果
+                message += "\n\n📋 详细结果:"
+                for res in result['results']:
+                    status = "✅" if res['success'] else "❌"
+                    message += f"\n{status} {res['format'].upper()}: {res['output_file']}"
+                    if not res['success']:
+                        message += f" - {res['message']}"
+                
+                return message
+            else:
+                return f"❌ 多格式转换失败: {result['message']}"
+        
+        else:
+            # 转换为单一格式
+            if output_format.lower() not in unified_converter_manager.get_supported_formats():
+                return f"❌ 不支持的格式: {output_format}. 支持的格式: {', '.join(unified_converter_manager.get_supported_formats())}"
+            
+            # 设置模板（如果指定）
+            if template and output_format.lower() == "pptx":
+                config_manager.update_pptx_settings(template_file=template)
+            
+            result = await unified_converter_manager.convert_single_file(
+                input_file=input_file,
+                output_format=output_format.lower(),
+                output_file=output_file,
+                debug=debug
+            )
+            
+            if result['success']:
+                message = f"""✅ {result['format'].upper()}转换成功!
+
+📄 输入文件: {result['input_file']}
+📄 输出文件: {result['output_file']}
+📊 格式: {result['format'].upper()}
+⏱️  转换耗时: {result['duration']}秒
+📊 文件大小: {result['file_size']} bytes
+💬 消息: {result['message']}"""
+                
+                # 添加调试信息
+                if debug and result.get('debug_info'):
+                    debug_info = result['debug_info']
+                    message += f"""
+
+🔍 调试信息:
+- 绝对输出路径: {debug_info.get('absolute_output_path', 'N/A')}
+- 当前工作目录: {debug_info.get('current_working_dir', 'N/A')}
+- 项目工作目录: {debug_info.get('project_working_dir', 'N/A')}"""
+                    
+                    if debug_info.get('subprocess_result'):
+                        subprocess_info = debug_info['subprocess_result']
+                        message += f"""
+- 执行命令: {subprocess_info.get('command', 'N/A')}
+- 返回码: {subprocess_info.get('return_code', 'N/A')}"""
+                        if subprocess_info.get('template_used'):
+                            message += f"\n- 使用模板: {subprocess_info['template_used']}"
+                
+                return message
+            else:
+                return f"""❌ {result['format'].upper()}转换失败!
+
+📄 输入文件: {result['input_file']}
+📄 输出文件: {result['output_file']}
+📊 格式: {result['format'].upper()}
+❌ 错误信息: {result['message']}"""
+    
+    except Exception as e:
+        return f"❌ 转换过程出错: {str(e)}"
+
+@mcp.tool()
+async def batch_convert_markdown(
+    input_dir: str,
+    output_formats: List[str] = ["docx"],
+    output_dir: Optional[str] = None,
+    file_pattern: str = "*.md",
+    parallel_jobs: Optional[int] = None
+) -> str:
+    """
+    批量转换目录中的 Markdown 文件为多种格式
+    
+    Args:
+        input_dir: 输入目录路径
+        output_formats: 输出格式列表 (["docx"], ["pptx"], ["docx", "pptx"])
+        output_dir: 输出目录路径（可选，使用配置默认值）
+        file_pattern: 文件匹配模式（默认 "*.md"）
+        parallel_jobs: 并行任务数（可选，使用配置默认值）
+        
+    Returns:
+        批量转换结果信息
+        
+    Use cases:
+        - 批量转换DOCX: batch_convert_markdown("/path/to/folder", ["docx"])
+        - 批量转换PPTX: batch_convert_markdown("/path/to/folder", ["pptx"])
+        - 批量转换多格式: batch_convert_markdown("/path/to/folder", ["docx", "pptx"])
+        - 自定义模式: batch_convert_markdown("/input", ["docx"], file_pattern="*.markdown")
+    """
+    
+    try:
+        # 验证输出格式
+        supported_formats = unified_converter_manager.get_supported_formats()
+        invalid_formats = [f for f in output_formats if f not in supported_formats]
+        if invalid_formats:
+            return f"❌ 不支持的格式: {', '.join(invalid_formats)}. 支持的格式: {', '.join(supported_formats)}"
+        
+        # 临时更新并行任务数（如果指定）
+        if parallel_jobs is not None:
+            original_jobs = config_manager.batch_settings.parallel_jobs
+            config_manager.update_batch_settings(parallel_jobs=parallel_jobs)
+        
+        result = await unified_converter_manager.batch_convert(
+            input_dir=input_dir,
+            output_formats=output_formats,
+            output_dir=output_dir,
+            file_pattern=file_pattern
+        )
+        
+        # 恢复原始并行任务数
+        if parallel_jobs is not None:
+            config_manager.update_batch_settings(parallel_jobs=original_jobs)
+        
+        if result['total'] > 0:
+            success_rate = (result['success'] / result['total']) * 100
+            
+            summary = f"""📊 批量转换完成!
+
+📁 输入目录: {input_dir}
+📁 输出目录: {output_dir or config_manager.conversion_settings.output_dir}
+🔍 文件模式: {file_pattern}
+📊 输出格式: {', '.join([f.upper() for f in output_formats])}
+
+📈 转换统计:
+- 总转换任务: {result['total']}
+- 成功转换: {result['success']}
+- 转换失败: {result['failed']}
+- 成功率: {success_rate:.1f}%
+
+💬 消息: {result['message']}"""
+            
+            # 按格式统计结果
+            format_stats = {}
+            for res in result['results']:
+                fmt = res['format']
+                if fmt not in format_stats:
+                    format_stats[fmt] = {'success': 0, 'failed': 0}
+                if res['success']:
+                    format_stats[fmt]['success'] += 1
+                else:
+                    format_stats[fmt]['failed'] += 1
+            
+            if format_stats:
+                summary += "\n\n📊 格式统计:"
+                for fmt, stats in format_stats.items():
+                    total_fmt = stats['success'] + stats['failed']
+                    success_rate_fmt = (stats['success'] / total_fmt) * 100 if total_fmt > 0 else 0
+                    summary += f"\n- {fmt.upper()}: 成功 {stats['success']}, 失败 {stats['failed']} (成功率: {success_rate_fmt:.1f}%)"
+            
+            # 添加失败详情（如果有失败的文件）
+            if result['failed'] > 0:
+                failed_results = [res for res in result['results'] if not res['success']]
+                if len(failed_results) <= 10:  # 只显示前10个失败的
+                    summary += "\n\n❌ 失败的转换:"
+                    for res in failed_results:
+                        summary += f"\n- {res['format'].upper()}: {res['input_file']} - {res['message']}"
+                else:
+                    summary += f"\n\n❌ 有 {len(failed_results)} 个转换失败，详情请查看日志文件"
+            
+            return summary
+        else:
+            return f"⚠️  批量转换结果: {result['message']}"
+    
+    except Exception as e:
+        return f"❌ 批量转换过程出错: {str(e)}"
+
+@mcp.tool()
+async def convert_with_template(
+    input_file: str,
+    output_format: str,
+    template_file: str,
+    output_file: Optional[str] = None
+) -> str:
+    """
+    使用指定模板转换文件
+    
+    Args:
+        input_file: 输入的 Markdown 文件路径
+        output_format: 输出格式 (docx/pptx)
+        template_file: 模板文件路径
+        output_file: 输出文件路径（可选）
+        
+    Returns:
+        转换结果信息
+        
+    Use cases:
+        - PPTX模板转换: convert_with_template("/path/to/file.md", "pptx", "custom.pptx")
+        - DOCX模板转换: convert_with_template("/path/to/file.md", "docx", "template.docx")
+    """
+    
+    try:
+        # 验证格式
+        if output_format not in unified_converter_manager.get_supported_formats():
+            return f"❌ 不支持的格式: {output_format}"
+        
+        # 验证模板文件
+        template_path = Path(template_file)
+        if not template_path.is_absolute():
+            # 相对路径，相对于对应的项目目录
+            if output_format == "pptx":
+                project_path = Path(config_manager.server_settings.md2pptx_project_path)
+                if not project_path.is_absolute():
+                    mcp_server_dir = Path(__file__).parent
+                    project_path = mcp_server_dir / project_path
+                template_path = project_path / template_file
+            # DOCX 模板处理可以在这里添加
+        
+        if not template_path.exists():
+            return f"❌ 模板文件不存在: {template_path}"
+        
+        # 设置模板配置
+        if output_format == "pptx":
+            config_manager.update_pptx_settings(template_file=template_file)
+        elif output_format == "docx":
+            config_manager.update_docx_settings(template_file=template_file)
+        
+        # 执行转换
+        result = await unified_converter_manager.convert_single_file(
+            input_file=input_file,
+            output_format=output_format,
+            output_file=output_file,
+            debug=True  # 启用调试以显示模板信息
+        )
+        
+        if result['success']:
+            message = f"""✅ 模板转换成功!
+
+📄 输入文件: {result['input_file']}
+📄 输出文件: {result['output_file']}
+📊 格式: {result['format'].upper()}
+🎨 模板: {template_file}
+⏱️  转换耗时: {result['duration']}秒
+💬 消息: {result['message']}"""
+            
+            return message
+        else:
+            return f"""❌ 模板转换失败!
+
+📄 输入文件: {result['input_file']}
+📊 格式: {result['format'].upper()}
+🎨 模板: {template_file}
+❌ 错误信息: {result['message']}"""
+    
+    except Exception as e:
+        return f"❌ 模板转换过程出错: {str(e)}"
 
 @mcp.tool()
 async def convert_md_to_docx(
@@ -484,22 +859,46 @@ async def get_conversion_status() -> str:
         
         md2docx_exists = md2docx_path.exists()
         
+        # 检查 md2pptx 项目路径
+        md2pptx_path = Path(config_manager.server_settings.md2pptx_project_path)
+        
+        # 如果是相对路径，相对于MCP服务器目录
+        if not md2pptx_path.is_absolute():
+            mcp_server_dir = Path(__file__).parent  # md2docx-mcp-server 目录
+            md2pptx_path = mcp_server_dir / md2pptx_path
+        
+        md2pptx_exists = md2pptx_path.exists()
+        
         # 检查输出目录
         output_dir = Path(config_manager.conversion_settings.output_dir)
         output_dir_exists = output_dir.exists()
         
-        status = f"""🔍 MD2DOCX 转换器状态
+        # 检查模板文件
+        pptx_template = config_manager.pptx_settings.template_file
+        pptx_template_exists = False
+        if pptx_template:
+            template_path = md2pptx_path / pptx_template
+            pptx_template_exists = template_path.exists()
+        
+        status = f"""🔍 统一转换器状态
 
 🖥️  服务器信息:
-- 服务器名称: MD2DOCX-Converter
+- 服务器名称: MD2DOCX-Converter (统一版)
 - Python 版本: {sys.version.split()[0]}
 - 工作目录: {Path.cwd()}
 
-📁 路径检查:
+📁 项目路径检查:
 - MD2DOCX 项目路径: {md2docx_path}
   状态: {'✅ 存在' if md2docx_exists else '❌ 不存在'}
+- MD2PPTX 项目路径: {md2pptx_path}
+  状态: {'✅ 存在' if md2pptx_exists else '❌ 不存在'}
 - 输出目录: {output_dir}
   状态: {'✅ 存在' if output_dir_exists else '⚠️  不存在（将自动创建）'}
+
+📊 格式支持:
+- 支持的格式: {', '.join([f.upper() for f in config_manager.conversion_settings.supported_formats])}
+- 默认格式: {config_manager.conversion_settings.default_format.upper()}
+- 可用转换器: {', '.join([f.upper() for f in unified_converter_manager.get_supported_formats()])}
 
 ⚙️  当前配置:
 - 调试模式: {'✅ 启用' if config_manager.conversion_settings.debug_mode else '❌ 禁用'}
@@ -507,15 +906,34 @@ async def get_conversion_status() -> str:
 - 并行任务数: {config_manager.batch_settings.parallel_jobs}
 - 支持文件类型: {', '.join(config_manager.file_settings.supported_extensions)}
 
+🎨 模板配置:
+- PPTX 模板: {pptx_template or '未设置'}
+  状态: {'✅ 存在' if pptx_template_exists else '❌ 不存在' if pptx_template else '⚠️  未配置'}
+- DOCX 模板: {config_manager.docx_settings.template_file or '默认'}
+
 🔧 可用工具:
-- convert_md_to_docx: 单文件转换
-- batch_convert_md_to_docx: 批量转换
+- convert_markdown: 统一转换工具 (支持 DOCX/PPTX)
+- batch_convert_markdown: 批量转换 (支持多格式)
+- convert_with_template: 模板转换
+- convert_md_to_docx: 单独DOCX转换 (向后兼容)
+- batch_convert_md_to_docx: 批量DOCX转换 (向后兼容)
 - list_markdown_files: 列出 Markdown 文件
 - configure_converter: 配置管理
 - get_conversion_status: 状态检查"""
         
+        # 添加警告信息
+        warnings = []
         if not md2docx_exists:
-            status += f"\n\n⚠️  警告: MD2DOCX 项目路径不存在，请使用 configure_converter 更新路径"
+            warnings.append("MD2DOCX 项目路径不存在，DOCX转换将不可用")
+        if not md2pptx_exists:
+            warnings.append("MD2PPTX 项目路径不存在，PPTX转换将不可用")
+        if pptx_template and not pptx_template_exists:
+            warnings.append(f"PPTX模板文件不存在: {pptx_template}")
+        
+        if warnings:
+            status += f"\n\n⚠️  警告:"
+            for warning in warnings:
+                status += f"\n- {warning}"
         
         return status
     

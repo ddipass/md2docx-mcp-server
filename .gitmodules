@@ -1,3 +1,6 @@
 [submodule "md2docx"]
 	path = md2docx
 	url = https://github.com/wangqiqi/md2docx.git
+[submodule "md2pptx"]
+	path = md2pptx
+	url = https://github.com/MartinPacker/md2pptx.git

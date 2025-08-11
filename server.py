@@ -945,30 +945,40 @@ async def get_conversion_status() -> str:
 @mcp.prompt()
 def md2docx_conversion_guide(
     task_type: str = "single",
-    input_path: str = "/path/to/your/file.md"
+    input_path: str = "/path/to/your/file.md",
+    output_format: str = "docx"
 ) -> str:
-    """MD2DOCX 转换指南 - 智能转换助手
+    """统一转换指南 - 智能转换助手
     
-    为用户提供基于任务类型的智能转换建议和具体执行命令。
+    为用户提供基于任务类型和输出格式的智能转换建议和具体执行命令。
+    支持 DOCX、PPTX 和多格式转换。
     """
     
     # 获取当前配置
     config = config_manager
     md2docx_configured = Path(config.server_settings.md2docx_project_path).exists()
+    md2pptx_configured = Path(config.server_settings.md2pptx_project_path).exists()
     
     # 任务类型分析
     task_lower = task_type.lower()
+    format_lower = output_format.lower()
     
     # 检测任务类型
     is_batch = any(keyword in task_lower for keyword in ['batch', 'bulk', 'multiple', 'folder', 'directory', '批量', '多个', '文件夹'])
     is_config = any(keyword in task_lower for keyword in ['config', 'setup', 'configure', 'setting', '配置', '设置'])
     is_debug = any(keyword in task_lower for keyword in ['debug', 'error', 'problem', 'issue', '调试', '错误', '问题'])
+    is_template = any(keyword in task_lower for keyword in ['template', 'theme', 'style', '模板', '主题', '样式'])
+    is_multi_format = any(keyword in task_lower for keyword in ['multi', 'both', 'all', 'multiple', '多格式', '同时'])
+    
+    # 格式检测
+    is_pptx = format_lower in ['pptx', 'powerpoint', 'presentation', '演示', '幻灯片']
+    is_both = format_lower in ['both', 'all', 'multi', '两种', '全部', '多格式']
     
     # 智能推荐
-    if not md2docx_configured:
+    if not md2docx_configured and not md2pptx_configured:
         primary_recommendation = "首次配置"
-        primary_command = f'quick_config_md2docx_path("/path/to/md2docx")'
-        primary_reason = "MD2DOCX 项目路径未配置，需要先设置项目路径"
+        primary_command = f'get_conversion_status()'
+        primary_reason = "转换器项目路径未配置，需要先检查系统状态"
     elif is_config:
         primary_recommendation = "配置管理"
         primary_command = f'configure_converter("show", "all")'
@@ -977,14 +987,41 @@ def md2docx_conversion_guide(
         primary_recommendation = "问题诊断"
         primary_command = f'validate_markdown_file("{input_path}")'
         primary_reason = "问题诊断任务，建议先验证文件格式"
+    elif is_template:
+        if is_pptx:
+            primary_recommendation = "PPTX模板转换"
+            primary_command = f'convert_with_template("{input_path}", "pptx", "Martin Template.pptx")'
+            primary_reason = "模板转换任务，使用专业PPTX模板"
+        else:
+            primary_recommendation = "模板转换"
+            primary_command = f'convert_with_template("{input_path}", "docx", "template.docx")'
+            primary_reason = "模板转换任务，使用自定义模板"
+    elif is_multi_format or is_both:
+        if is_batch:
+            primary_recommendation = "批量多格式转换"
+            primary_command = f'batch_convert_markdown("{input_path}", ["docx", "pptx"])'
+            primary_reason = "批量多格式任务，同时生成DOCX和PPTX文件"
+        else:
+            primary_recommendation = "多格式转换"
+            primary_command = f'convert_markdown("{input_path}", "both")'
+            primary_reason = "多格式转换任务，同时生成两种格式"
     elif is_batch:
-        primary_recommendation = "批量转换"
-        primary_command = f'batch_convert_md_to_docx("{input_path}")'
-        primary_reason = "批量任务检测，使用批量转换工具提高效率"
+        if is_pptx:
+            primary_recommendation = "批量PPTX转换"
+            primary_command = f'batch_convert_markdown("{input_path}", ["pptx"])'
+            primary_reason = "批量PPTX转换任务，生成演示文稿"
+        else:
+            primary_recommendation = "批量DOCX转换"
+            primary_command = f'batch_convert_markdown("{input_path}", ["docx"])'
+            primary_reason = "批量DOCX转换任务，生成文档"
+    elif is_pptx:
+        primary_recommendation = "PPTX转换"
+        primary_command = f'convert_markdown("{input_path}", "pptx")'
+        primary_reason = "PPTX转换任务，生成演示文稿"
     else:
-        primary_recommendation = "单文件转换"
-        primary_command = f'convert_md_to_docx("{input_path}")'
-        primary_reason = "单文件转换任务，使用基础转换工具"
+        primary_recommendation = "DOCX转换"
+        primary_command = f'convert_markdown("{input_path}", "docx")'
+        primary_reason = "DOCX转换任务，生成文档"
     
     # 构建特征分析
     features = []
@@ -993,10 +1030,162 @@ def md2docx_conversion_guide(
     else:
         features.append("单文件")
     
+    if is_pptx:
+        features.append("PPTX格式")
+    elif is_both:
+        features.append("多格式")
+    else:
+        features.append("DOCX格式")
+    
+    if is_template:
+        features.append("模板转换")
     if is_config:
         features.append("配置管理")
     if is_debug:
         features.append("问题诊断")
+    
+    if len(features) == 1:
+        features.append("标准转换")
+    
+    features_display = " | ".join(features)
+    
+    return f"""# 📄 统一转换智能助手
+
+## 📊 任务分析
+**任务类型**: {task_type}
+**输入路径**: {input_path}
+**输出格式**: {output_format}
+**任务特征**: {features_display}
+**MD2DOCX 配置状态**: {'✅ 已配置' if md2docx_configured else '❌ 未配置'}
+**MD2PPTX 配置状态**: {'✅ 已配置' if md2pptx_configured else '❌ 未配置'}
+**当前输出目录**: {config.conversion_settings.output_dir}
+
+## 🎯 AI 推荐方案 (优先使用)
+
+### ⭐ 推荐: {primary_recommendation}
+**分析**: {primary_reason}
+
+**🚀 立即执行**:
+```
+{primary_command}
+```
+
+## 🔧 统一转换工具矩阵
+
+### 📄 文档转换 (新功能)
+| 使用场景 | 工具 | 命令示例 |
+|----------|------|----------|
+| DOCX转换 | convert_markdown | `convert_markdown("/path/to/file.md", "docx")` |
+| PPTX转换 | convert_markdown | `convert_markdown("/path/to/file.md", "pptx")` |
+| 多格式转换 | convert_markdown | `convert_markdown("/path/to/file.md", "both")` |
+| 批量DOCX | batch_convert_markdown | `batch_convert_markdown("/path/to/folder", ["docx"])` |
+| 批量PPTX | batch_convert_markdown | `batch_convert_markdown("/path/to/folder", ["pptx"])` |
+| 批量多格式 | batch_convert_markdown | `batch_convert_markdown("/path/to/folder", ["docx", "pptx"])` |
+
+### 🎨 模板转换
+| 使用场景 | 工具 | 命令示例 |
+|----------|------|----------|
+| PPTX模板 | convert_with_template | `convert_with_template("/path/to/file.md", "pptx", "Martin Template.pptx")` |
+| 自定义模板 | convert_with_template | `convert_with_template("/path/to/file.md", "pptx", "custom.pptx")` |
+| DOCX模板 | convert_with_template | `convert_with_template("/path/to/file.md", "docx", "template.docx")` |
+
+### 📁 文件管理
+| 使用场景 | 工具 | 命令示例 |
+|----------|------|----------|
+| 列出文件 | list_markdown_files | `list_markdown_files("/path/to/folder")` |
+| 递归搜索 | list_markdown_files | `list_markdown_files("/path/to/folder", recursive=True)` |
+| 验证文件 | validate_markdown_file | `validate_markdown_file("/path/to/file.md")` |
+
+### ⚙️ 配置管理
+| 使用场景 | 工具 | 命令示例 |
+|----------|------|----------|
+| 查看状态 | get_conversion_status | `get_conversion_status()` |
+| 查看配置 | configure_converter | `configure_converter("show", "all")` |
+| 设置默认格式 | quick_config_default_format | `quick_config_default_format("pptx")` |
+| 设置PPTX模板 | quick_config_pptx_template | `quick_config_pptx_template("business.pptx")` |
+| 设置输出目录 | quick_config_output_dir | `quick_config_output_dir("/path/to/output")` |
+| 启用调试 | quick_config_debug_mode | `quick_config_debug_mode(True)` |
+
+### 🔄 向后兼容工具
+| 使用场景 | 工具 | 命令示例 |
+|----------|------|----------|
+| 单独DOCX转换 | convert_md_to_docx | `convert_md_to_docx("/path/to/file.md")` |
+| 批量DOCX转换 | batch_convert_md_to_docx | `batch_convert_md_to_docx("/path/to/folder")` |
+
+## 🤔 决策树
+
+```
+转换需求分析
+    ↓
+首次使用? → Yes → get_conversion_status() ✅
+    ↓ No
+需要模板? → Yes → convert_with_template() ✅
+    ↓ No
+多种格式? → Yes → convert_markdown("both") 或 batch_convert_markdown(["docx", "pptx"]) ✅
+    ↓ No
+批量转换? → Yes → batch_convert_markdown() ✅
+    ↓ No
+PPTX格式? → Yes → convert_markdown("pptx") ✅
+    ↓ No
+DOCX格式 → convert_markdown("docx") ✅
+```
+
+## 💡 使用建议
+
+### 📄 首次使用流程
+1. **检查系统状态**: `get_conversion_status()`
+2. **设置默认格式**: `quick_config_default_format("pptx")`
+3. **测试转换**: `convert_markdown("/path/to/test.md", "both")`
+4. **检查结果**: 验证生成的 DOCX 和 PPTX 文件
+
+### 🚀 批量处理流程
+1. **查看文件**: `list_markdown_files("/path/to/folder")`
+2. **设置并行数**: `quick_config_parallel_jobs(8)`
+3. **执行批量转换**: `batch_convert_markdown("/path/to/folder", ["docx", "pptx"])`
+4. **监控进度**: 查看转换日志和结果
+
+### 🎨 模板使用流程
+1. **设置PPTX模板**: `quick_config_pptx_template("Martin Template.pptx")`
+2. **模板转换**: `convert_with_template("/path/to/file.md", "pptx", "Martin Template.pptx")`
+3. **验证输出**: 检查生成的专业演示文稿
+
+### 🔧 问题诊断流程
+1. **验证文件**: `validate_markdown_file("/path/to/problem.md")`
+2. **启用调试**: `quick_config_debug_mode(True)`
+3. **重新转换**: `convert_markdown("/path/to/problem.md", "docx", debug=True)`
+4. **分析错误**: 根据详细日志调整配置
+
+## 🎯 快速开始示例
+
+```python
+# 📄 统一转换 (推荐)
+convert_markdown("/Users/username/Documents/report.md", "pptx")
+convert_markdown("/Users/username/Documents/report.md", "both")
+
+# 📁 批量多格式转换
+batch_convert_markdown("/Users/username/Documents/markdown-files/", ["docx", "pptx"])
+
+# 🎨 模板转换
+convert_with_template("/Users/username/Documents/presentation.md", "pptx", "Martin Template.pptx")
+
+# ⚙️ 配置管理
+quick_config_default_format("pptx")
+quick_config_pptx_template("business.pptx")
+
+# 🔧 问题诊断
+validate_markdown_file("/Users/username/Documents/problem.md")
+```
+
+## ⚠️ 重要提示
+
+- 🆕 **新功能**: 现在支持 DOCX 和 PPTX 双格式转换
+- 🎨 **模板支持**: 内置专业 PPTX 模板，支持自定义
+- ⚡ **性能提升**: 支持多格式并行转换
+- 🔄 **向后兼容**: 所有旧工具仍然可用
+- 📊 **智能推荐**: 根据内容特征推荐最佳格式
+
+**🚀 准备开始转换？使用上面的 AI 推荐方案！**
+"""
     
     if len(features) == 1:
         features.append("标准转换")
@@ -1115,28 +1304,49 @@ validate_markdown_file("/Users/username/Documents/problem.md")
 @mcp.prompt()
 def md2docx_troubleshooting_guide(
     error_type: str = "conversion_failed",
-    file_path: str = "/path/to/problem.md"
+    file_path: str = "/path/to/problem.md",
+    output_format: str = "docx"
 ) -> str:
-    """MD2DOCX 故障排除指南
+    """统一转换故障排除指南
     
-    提供针对常见问题的诊断步骤和解决方案。
+    提供针对 DOCX/PPTX 转换常见问题的诊断步骤和解决方案。
     """
     
     error_lower = error_type.lower()
+    format_lower = output_format.lower()
     
     # 错误类型分析
     is_path_error = any(keyword in error_lower for keyword in ['path', 'not found', 'missing', '路径', '找不到'])
     is_format_error = any(keyword in error_lower for keyword in ['format', 'encoding', 'invalid', '格式', '编码'])
     is_permission_error = any(keyword in error_lower for keyword in ['permission', 'access', 'denied', '权限', '访问'])
     is_config_error = any(keyword in error_lower for keyword in ['config', 'setup', 'not configured', '配置'])
+    is_pptx_error = any(keyword in error_lower for keyword in ['pptx', 'powerpoint', 'presentation', 'template'])
+    is_dependency_error = any(keyword in error_lower for keyword in ['module', 'import', 'dependency', '依赖', '模块'])
     
-    # 确定主要问题类型
-    if is_config_error:
+    # 格式特定错误
+    is_pptx_format = format_lower in ['pptx', 'powerpoint', 'presentation']
+    
+    # 确定主要问题类型和诊断步骤
+    if is_dependency_error:
+        problem_type = "依赖问题"
+        if is_pptx_format or is_pptx_error:
+            diagnostic_steps = [
+                "get_conversion_status()",
+                "quick_config_debug_mode(True)",
+                f"convert_markdown('{file_path}', 'pptx', debug=True)"
+            ]
+        else:
+            diagnostic_steps = [
+                "get_conversion_status()",
+                f"validate_markdown_file('{file_path}')",
+                f"convert_markdown('{file_path}', 'docx', debug=True)"
+            ]
+    elif is_config_error:
         problem_type = "配置问题"
         diagnostic_steps = [
             "get_conversion_status()",
-            "configure_converter('show', 'server')",
-            "quick_config_md2docx_path('/correct/path/to/md2docx')"
+            "configure_converter('show', 'all')",
+            "quick_config_debug_mode(True)"
         ]
     elif is_path_error:
         problem_type = "路径问题"
@@ -1150,28 +1360,36 @@ def md2docx_troubleshooting_guide(
         diagnostic_steps = [
             f"validate_markdown_file('{file_path}')",
             "quick_config_debug_mode(True)",
-            f"convert_md_to_docx('{file_path}', debug=True)"
+            f"convert_markdown('{file_path}', '{output_format}', debug=True)"
         ]
     elif is_permission_error:
         problem_type = "权限问题"
         diagnostic_steps = [
             "get_conversion_status()",
             "quick_config_output_dir('/writable/path')",
-            f"convert_md_to_docx('{file_path}')"
+            f"convert_markdown('{file_path}', '{output_format}')"
+        ]
+    elif is_pptx_error or is_pptx_format:
+        problem_type = "PPTX转换问题"
+        diagnostic_steps = [
+            "get_conversion_status()",
+            "quick_config_pptx_template('Martin Template.pptx')",
+            f"convert_markdown('{file_path}', 'pptx', debug=True)"
         ]
     else:
         problem_type = "一般转换问题"
         diagnostic_steps = [
             f"validate_markdown_file('{file_path}')",
             "quick_config_debug_mode(True)",
-            f"convert_md_to_docx('{file_path}', debug=True)"
+            f"convert_markdown('{file_path}', '{output_format}', debug=True)"
         ]
     
-    return f"""# 🔧 MD2DOCX 故障排除指南
+    return f"""# 🔧 统一转换故障排除指南
 
 ## 🚨 问题分析
 **错误类型**: {error_type}
 **问题文件**: {file_path}
+**输出格式**: {output_format.upper()}
 **问题分类**: {problem_type}
 
 ## 🔍 诊断步骤
@@ -1193,11 +1411,41 @@ def md2docx_troubleshooting_guide(
 
 ## 🛠️ 常见问题解决方案
 
-### ❌ MD2DOCX 项目路径未配置
-**症状**: "MD2DOCX project path not configured"
+### ❌ 转换器项目路径未配置
+**症状**: "项目路径不存在" 或 "not configured"
 **解决方案**:
 ```
-quick_config_md2docx_path("/path/to/md2docx")
+get_conversion_status()
+# 检查 MD2DOCX 和 MD2PPTX 项目状态
+# 如果路径不存在，项目应该已经通过子模块自动配置
+```
+
+### ❌ PPTX 转换失败 - 依赖问题
+**症状**: "ModuleNotFoundError: No module named 'pptx'"
+**解决方案**:
+```
+# 检查虚拟环境
+get_conversion_status()
+
+# 确保使用正确的 Python 环境
+quick_config_debug_mode(True)
+convert_markdown("{file_path}", "pptx", debug=True)
+
+# 如果仍然失败，重新安装依赖
+# 在终端运行: uv sync
+```
+
+### ❌ PPTX 模板问题
+**症状**: "Template not found" 或模板相关错误
+**解决方案**:
+```
+# 设置默认模板
+quick_config_pptx_template("Martin Template.pptx")
+
+# 使用模板转换
+convert_with_template("{file_path}", "pptx", "Martin Template.pptx")
+
+# 检查模板状态
 get_conversion_status()
 ```
 
@@ -1205,34 +1453,69 @@ get_conversion_status()
 **症状**: "File not found" 或 "Path does not exist"
 **解决方案**:
 ```
+# 验证文件
+validate_markdown_file("{file_path}")
+
+# 列出目录文件
 list_markdown_files("/correct/directory/path")
-validate_markdown_file("/correct/file/path.md")
+
+# 使用绝对路径
+convert_markdown("/absolute/path/to/file.md", "{output_format}")
 ```
 
 ### ❌ 文件格式或编码问题
 **症状**: "Encoding error" 或 "Invalid format"
 **解决方案**:
 ```
+# 验证文件格式
 validate_markdown_file("{file_path}")
+
+# 更新文件编码配置
 configure_converter("update", "file", encoding="utf-8")
-convert_md_to_docx("{file_path}", debug=True)
+
+# 调试转换
+convert_markdown("{file_path}", "{output_format}", debug=True)
 ```
 
 ### ❌ 权限或输出目录问题
 **症状**: "Permission denied" 或 "Cannot write to directory"
 **解决方案**:
 ```
+# 设置可写输出目录
 quick_config_output_dir("/writable/output/path")
+
+# 检查状态
 get_conversion_status()
+
+# 重新转换
+convert_markdown("{file_path}", "{output_format}")
 ```
 
 ### ❌ 批量转换失败
 **症状**: 部分文件转换失败
 **解决方案**:
 ```
+# 启用调试模式
 quick_config_debug_mode(True)
-quick_config_parallel_jobs(2)  # 降低并行数
-batch_convert_md_to_docx("/input/path")
+
+# 降低并行数
+quick_config_parallel_jobs(2)
+
+# 分格式批量转换
+batch_convert_markdown("/input/path", ["docx"])
+batch_convert_markdown("/input/path", ["pptx"])
+```
+
+### ❌ 多格式转换问题
+**症状**: 某种格式转换失败
+**解决方案**:
+```
+# 分别测试各格式
+convert_markdown("{file_path}", "docx", debug=True)
+convert_markdown("{file_path}", "pptx", debug=True)
+
+# 检查格式特定配置
+configure_converter("show", "all")
 ```
 
 ## 🔄 完整诊断流程
@@ -1241,7 +1524,7 @@ batch_convert_md_to_docx("/input/path")
 ```
 get_conversion_status()
 ```
-检查 MD2DOCX 路径、输出目录、配置状态
+检查转换器路径、输出目录、配置状态、支持格式
 
 ### 2️⃣ 文件验证
 ```
@@ -1252,23 +1535,68 @@ validate_markdown_file("{file_path}")
 ### 3️⃣ 调试模式转换
 ```
 quick_config_debug_mode(True)
+convert_markdown("{file_path}", "{output_format}", debug=True)
+```
+获取详细错误信息和执行日志
+
+### 4️⃣ 格式特定检查
+```python
+# 对于 PPTX 问题
+quick_config_pptx_template("Martin Template.pptx")
+convert_with_template("{file_path}", "pptx", "Martin Template.pptx")
+
+# 对于 DOCX 问题  
 convert_md_to_docx("{file_path}", debug=True)
 ```
-获取详细错误信息
 
-### 4️⃣ 配置调整
+### 5️⃣ 配置调整
 根据错误信息调整相应配置
 
-### 5️⃣ 重新测试
+### 6️⃣ 重新测试
 使用修正后的配置重新转换
+
+## 🆕 新功能相关问题
+
+### PPTX 转换新功能
+- ✅ 支持专业模板 (Martin Template.pptx)
+- ✅ 自定义模板支持
+- ✅ 智能幻灯片布局
+- ✅ 多媒体内容处理
+
+### 多格式转换
+- ✅ 同时生成 DOCX 和 PPTX
+- ✅ 批量多格式处理
+- ✅ 格式特定配置
+- ✅ 并行转换优化
+
+### 模板系统
+- ✅ 内置专业模板
+- ✅ 模板验证和管理
+- ✅ 自定义模板支持
+- ✅ 模板预览功能
 
 ## 📞 获取帮助
 
 如果问题仍然存在，请：
-1. 运行 `get_conversion_status()` 获取完整状态信息
-2. 运行 `validate_markdown_file()` 验证问题文件
-3. 启用调试模式获取详细错误日志
-4. 检查 MD2DOCX 项目是否正确安装和配置
+
+1. **📊 收集信息**:
+   ```
+   get_conversion_status()
+   validate_markdown_file("{file_path}")
+   ```
+
+2. **🔍 启用详细日志**:
+   ```
+   quick_config_debug_mode(True)
+   convert_markdown("{file_path}", "{output_format}", debug=True)
+   ```
+
+3. **📋 检查配置**:
+   ```
+   configure_converter("show", "all")
+   ```
+
+4. **🐛 报告问题**: 在 [GitHub Issues](https://github.com/ddipass/md2docx-mcp-server/issues) 提供详细信息
 
 **🔧 开始诊断？按照上面的步骤逐一检查！**
 """
@@ -1337,15 +1665,26 @@ async def validate_markdown_file(file_path: str) -> str:
 
 def main():
     """主函数"""
-    print("🚀 MD2DOCX MCP Server 已启动")
+    print("🚀 统一转换 MCP Server 已启动")
     print("📋 可用工具:")
-    print("  - convert_md_to_docx: 单文件转换")
-    print("  - batch_convert_md_to_docx: 批量转换")
-    print("  - list_markdown_files: 列出 Markdown 文件")
-    print("  - configure_converter: 配置管理")
-    print("  - get_conversion_status: 状态检查")
-    print("  - validate_markdown_file: 文件验证")
-    print("✅ 服务器准备就绪")
+    print("  🔄 统一转换工具:")
+    print("    - convert_markdown: 统一转换 (DOCX/PPTX/Both)")
+    print("    - batch_convert_markdown: 批量多格式转换")
+    print("    - convert_with_template: 模板转换")
+    print("  ⚙️  配置管理工具:")
+    print("    - quick_config_default_format: 设置默认格式")
+    print("    - quick_config_pptx_template: 设置PPTX模板")
+    print("    - get_conversion_status: 状态检查")
+    print("  🔄 向后兼容工具:")
+    print("    - convert_md_to_docx: 单独DOCX转换")
+    print("    - batch_convert_md_to_docx: 批量DOCX转换")
+    print("  📁 文件管理工具:")
+    print("    - list_markdown_files: 列出文件")
+    print("    - validate_markdown_file: 验证文件")
+    print("  🎯 智能助手:")
+    print("    - md2docx_conversion_guide: 转换指导")
+    print("    - md2docx_troubleshooting_guide: 故障排除")
+    print("✅ 服务器准备就绪 - 支持 DOCX 和 PPTX 转换")
 
 if __name__ == "__main__":
     main()

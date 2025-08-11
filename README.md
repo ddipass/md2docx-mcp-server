@@ -4,94 +4,283 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-green.svg)](https://modelcontextprotocol.io/)
 
-一个基于 Model Context Protocol (MCP) 的 Markdown 到 DOCX 转换服务器，提供强大的文档转换功能。
+一个基于 Model Context Protocol (MCP) 的统一文档转换服务器，支持 Markdown 到 DOCX 和 PPTX 格式的转换。
 
 ## ✨ 特性
 
-- 🔄 **单文件转换** - 将单个 Markdown 文件转换为 DOCX 格式
-- 📦 **批量转换** - 批量处理目录中的多个 Markdown 文件
-- ⚙️ **灵活配置** - 支持多种转换参数和设置
-- 🔍 **文件管理** - 列出和验证 Markdown 文件
-- 🚀 **并行处理** - 支持多线程并行转换
-- 📊 **详细日志** - 完整的转换过程记录
+- 🔄 **统一转换** - 支持 Markdown 转换为 DOCX 和 PPTX 格式
+- 📦 **批量处理** - 批量转换目录中的多个文件，支持多种输出格式
+- 🎨 **模板支持** - 内置专业模板，支持自定义模板
+- ⚙️ **智能配置** - 格式特定的配置选项和参数
+- 🚀 **并行处理** - 多线程并行转换，提高效率
+- 📊 **详细日志** - 完整的转换过程记录和统计
 - 🛡️ **错误处理** - 智能的错误恢复和重试机制
-- 📦 **开箱即用** - 内置 md2docx 依赖，无需额外安装
+- 📦 **开箱即用** - 内置所有依赖，无需额外安装
+
+## 🚀 快速开始
+
+### 方法1：一键安装（推荐）
+
+```bash
+# 克隆项目（包含所有依赖）
+git clone --recursive https://github.com/ddipass/md2docx-mcp-server.git
+cd md2docx-mcp-server
+
+# 安装依赖
+uv sync
+
+# 立即可用！
+```
+
+### 方法2：分步安装
+
+```bash
+# 克隆主项目
+git clone https://github.com/ddipass/md2docx-mcp-server.git
+cd md2docx-mcp-server
+
+# 初始化子模块
+git submodule update --init --recursive
+
+# 安装依赖
+uv sync
+```
+
+## 🔧 Amazon Q CLI 配置
+
+### 1. 获取项目绝对路径
+
+```bash
+cd md2docx-mcp-server
+pwd
+# 复制输出的路径，例如：/Users/username/md2docx-mcp-server
+```
+
+### 2. 配置 MCP 服务器
+
+在 `~/.aws/amazonq/mcp.json` 文件中添加：
+
+```json
+{
+  "mcpServers": {
+    "MD2DOCX": {
+      "command": "/absolute/path/to/md2docx-mcp-server/.venv/bin/mcp",
+      "args": [
+        "run",
+        "/absolute/path/to/md2docx-mcp-server/server.py"
+      ],
+      "cwd": "/absolute/path/to/md2docx-mcp-server"
+    }
+  }
+}
+```
+
+**重要**: 将 `/absolute/path/to/md2docx-mcp-server` 替换为步骤1中获取的实际路径。
+
+### 3. 验证安装
+
+启动 Amazon Q CLI 后，测试以下命令：
+
+```
+使用 get_conversion_status 工具检查服务器状态
+```
+
+如果看到类似以下输出，说明安装成功：
+
+```
+🔍 统一转换器状态
+🖥️  服务器信息:
+- 服务器名称: MD2DOCX-Converter (统一版)
+📊 格式支持:
+- 支持的格式: DOCX, PPTX
+- 可用转换器: DOCX, PPTX
+```
+
+## 🎯 使用示例
+
+### 基本转换
+
+```python
+# 转换为 DOCX（默认）
+convert_markdown("/path/to/document.md")
+
+# 转换为 PPTX
+convert_markdown("/path/to/document.md", "pptx")
+
+# 同时转换为两种格式
+convert_markdown("/path/to/document.md", "both")
+```
+
+### 批量转换
+
+```python
+# 批量转换为 DOCX
+batch_convert_markdown("/path/to/folder")
+
+# 批量转换为多种格式
+batch_convert_markdown("/path/to/folder", ["docx", "pptx"])
+```
+
+### 模板转换
+
+```python
+# 使用自定义 PPTX 模板
+convert_with_template("/path/to/file.md", "pptx", "custom.pptx")
+
+# 设置默认模板
+quick_config_pptx_template("business.pptx")
+```
 
 ## 🏗️ 架构设计
-
-本项目采用 MCP (Model Context Protocol) 架构，通过 Git Submodule 集成 [md2docx](https://github.com/wangqiqi/md2docx) 项目，实现开箱即用的部署体验。
 
 ### 项目结构
 
 ```
 md2docx-mcp-server/
-├── server.py                 # 主 MCP 服务器文件
-├── pyproject.toml            # 项目配置
-├── README.md                 # 项目说明
-├── DEPLOYMENT_GUIDE.md       # 部署指南
-├── core/                     # 核心模块
-│   ├── __init__.py
-│   ├── config_manager.py     # 配置管理器
-│   └── converter_manager.py  # 转换管理器
-├── md2docx/                  # Git Submodule (内置依赖)
-│   ├── src/
-│   │   ├── cli.py           # md2docx CLI 接口
-│   │   └── converter/       # 转换器模块
-│   └── requirements.txt
-├── config/                   # 配置文件目录
-│   └── converter_config.json # 转换器配置（自动生成）
-└── .venv/                    # 虚拟环境
+├── server.py                     # 主 MCP 服务器文件
+├── core/                         # 核心模块
+│   ├── config_manager.py          # 配置管理器
+│   ├── converter_manager.py       # 原始转换器（向后兼容）
+│   └── unified_converter_manager.py # 统一转换器
+├── md2docx/                       # Git Submodule (DOCX转换器)
+├── md2pptx/                       # Git Submodule (PPTX转换器)
+├── config/                        # 配置文件目录
+├── output/                        # 输出目录
+│   ├── docx/                      # DOCX 输出
+│   └── pptx/                      # PPTX 输出
+└── templates/                     # 模板目录（可选）
 ```
 
 ### 设计原则
 
-1. **开箱即用** - 通过 Git Submodule 内置所有依赖
-2. **模块化** - 清晰的模块分离和职责划分
-3. **可配置** - 所有参数都可以通过配置文件或 MCP 工具调整
-4. **异步处理** - 支持异步操作和并行处理
-5. **错误恢复** - 智能的错误处理和重试机制
+1. **🔄 统一接口** - 相同的 MCP 工具接口，支持多种输出格式
+2. **📦 模块化** - 每种格式独立的转换器模块
+3. **⚙️ 配置驱动** - 统一的配置管理，支持格式特定选项
+4. **🚀 并行处理** - 支持同时转换多种格式
+5. **🛡️ 错误隔离** - 一种格式失败不影响其他格式
 
-## 安装和设置
+## 🛠️ 可用工具
 
-### 1. 环境要求
+### 统一转换工具
 
-- Python 3.10+
-- uv 包管理器
-- Git（用于子模块管理）
+| 工具名称 | 功能描述 | 使用示例 |
+|---------|---------|---------|
+| `convert_markdown` | 统一转换工具 | `convert_markdown("/path/to/file.md", "pptx")` |
+| `batch_convert_markdown` | 批量多格式转换 | `batch_convert_markdown("/path/to/folder", ["docx", "pptx"])` |
+| `convert_with_template` | 模板转换 | `convert_with_template("/path/to/file.md", "pptx", "template.pptx")` |
 
-### 2. 克隆项目（包含依赖）
+### 配置管理工具
 
-```bash
-# 推荐：克隆时同时初始化子模块
-git clone --recursive https://github.com/your-username/md2docx-mcp-server.git
+| 工具名称 | 功能描述 | 使用示例 |
+|---------|---------|---------|
+| `quick_config_default_format` | 设置默认格式 | `quick_config_default_format("pptx")` |
+| `quick_config_pptx_template` | 设置PPTX模板 | `quick_config_pptx_template("business.pptx")` |
+| `get_conversion_status` | 检查服务器状态 | `get_conversion_status()` |
 
-# 或者分步执行
-git clone https://github.com/your-username/md2docx-mcp-server.git
-cd md2docx-mcp-server
-git submodule update --init --recursive
-```
+### 向后兼容工具
 
-### 3. 创建虚拟环境并安装依赖
+| 工具名称 | 功能描述 | 使用示例 |
+|---------|---------|---------|
+| `convert_md_to_docx` | 单独DOCX转换 | `convert_md_to_docx("/path/to/file.md")` |
+| `batch_convert_md_to_docx` | 批量DOCX转换 | `batch_convert_md_to_docx("/path/to/folder")` |
 
-```bash
-cd md2docx-mcp-server
-uv sync
-```
+## 🎨 模板支持
 
-### 4. 激活虚拟环境
+### PPTX 模板
 
-```bash
-source .venv/bin/activate
-```
+项目内置了 Martin Template.pptx 作为默认模板，你也可以：
 
-### 5. 验证安装
+1. **使用内置模板**：
+   ```python
+   quick_config_pptx_template("Martin Template.pptx")
+   ```
 
-项目已内置 md2docx 依赖，无需额外配置：
+2. **使用自定义模板**：
+   ```python
+   convert_with_template("/path/to/file.md", "pptx", "/path/to/custom.pptx")
+   ```
 
-```python
-# 通过 MCP 工具验证
-get_conversion_status()
-```
+### DOCX 模板
+
+支持自定义 DOCX 模板（功能开发中）。
+
+## 🔧 配置选项
+
+### 转换设置
+
+- `supported_formats`: 支持的输出格式 `["docx", "pptx"]`
+- `default_format`: 默认输出格式 `"docx"`
+- `debug_mode`: 调试模式开关
+- `output_dir`: 默认输出目录
+
+### PPTX 特定设置
+
+- `template_file`: 模板文件路径
+- `aspect_ratio`: 幻灯片宽高比 `"16:9"`
+- `theme`: 主题设置
+- `font_size`: 默认字体大小
+
+### DOCX 特定设置
+
+- `font_family`: 字体系列 `"Arial"`
+- `font_size`: 字体大小 `12`
+- `line_spacing`: 行间距 `1.15`
+
+## 🚨 故障排除
+
+### 常见问题
+
+1. **子模块未初始化**
+   ```bash
+   git submodule update --init --recursive
+   ```
+
+2. **Python 环境问题**
+   ```bash
+   source .venv/bin/activate
+   uv sync
+   ```
+
+3. **权限问题**
+   ```bash
+   chmod +x .venv/bin/mcp
+   ```
+
+4. **路径配置错误**
+   - 确保使用绝对路径
+   - 检查 `~/.aws/amazonq/mcp.json` 配置
+
+### 获取帮助
+
+如果遇到问题，请：
+
+1. 运行 `get_conversion_status()` 检查状态
+2. 启用调试模式：`quick_config_debug_mode(True)`
+3. 查看详细错误信息
+4. 在 [GitHub Issues](https://github.com/ddipass/md2docx-mcp-server/issues) 报告问题
+
+## 📈 版本历史
+
+- **v1.1.0** - 🚀 集成 md2pptx，支持统一 DOCX/PPTX 转换
+- **v1.0.0** - 🎉 首个稳定版本，支持 DOCX 转换
+
+## 🤝 贡献
+
+欢迎贡献代码！请查看 [贡献指南](CONTRIBUTING.md)。
+
+## 📄 许可证
+
+MIT License - 详见 [LICENSE](LICENSE) 文件。
+
+## 🙏 致谢
+
+- [md2docx](https://github.com/wangqiqi/md2docx) - DOCX 转换引擎
+- [md2pptx](https://github.com/MartinPacker/md2pptx) - PPTX 转换引擎
+- [Model Context Protocol](https://modelcontextprotocol.io/) - MCP 协议支持
+
+---
+
+**🚀 准备开始？按照上面的快速开始指南，几分钟内就能运行起来！**
 
 ## 🛠️ MCP 工具说明
 

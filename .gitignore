@@ -44,10 +44,18 @@ ehthumbs.db
 Thumbs.db
 
 # Project specific
-output/
+output/*.docx
+output/*.pptx
+output/*/*.docx
+output/*/*.pptx
 *.log
-*.docx
 temp/
+test_*.py
 
 # MCP
 .mcp/
+
+# Backup files
+*.bak
+*.tmp
+*.temp

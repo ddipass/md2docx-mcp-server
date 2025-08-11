@@ -1,0 +1,29 @@
+{
+  "conversion_settings": {
+    "debug_mode": false,
+    "output_dir": "output",
+    "preserve_structure": true,
+    "auto_timestamp": true,
+    "max_retry_attempts": 5
+  },
+  "batch_settings": {
+    "parallel_jobs": 4,
+    "skip_existing": false,
+    "create_log": true,
+    "log_level": "INFO"
+  },
+  "file_settings": {
+    "supported_extensions": [
+      ".md",
+      ".markdown",
+      ".txt"
+    ],
+    "output_extension": ".docx",
+    "encoding": "utf-8"
+  },
+  "server_settings": {
+    "md2docx_project_path": "md2docx",
+    "use_subprocess": true,
+    "use_python_import": false
+  }
+}

@@ -1,0 +1,30 @@
+[project]
+name = "md2docx-mcp-server"
+version = "0.1.0"
+description = "A powerful MCP server for Markdown to DOCX conversion using md2docx converter"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp[cli]>=1.10.1",
+    "markdown-it-py",
+    "python-docx",
+    "requests",
+    "html2docx",
+    "aiofiles>=23.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black",
+    "pyinstaller",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["server*", "core*"]

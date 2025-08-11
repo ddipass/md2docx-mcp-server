@@ -83,17 +83,15 @@ activate_virtual_environment()
 
 # ===== 导入依赖模块 =====
 from mcp.server.fastmcp import FastMCP
-from core import get_config_manager, get_converter_manager, reload_config
+from core import get_config_manager, reload_config
 from core.unified_converter_manager import get_unified_converter_manager
 
 # 初始化配置和转换管理器
 config_manager = get_config_manager()
-converter_manager = get_converter_manager()  # 保持向后兼容
-unified_converter_manager = get_unified_converter_manager()  # 新的统一转换器
+unified_converter_manager = get_unified_converter_manager()
 
 print(f"⚙️  配置管理器已初始化")
-print(f"🔄 转换管理器已初始化")
-print(f"🚀 统一转换管理器已初始化")
+print(f"🔄 统一转换管理器已初始化")
 
 # 创建 MCP 服务器
 mcp = FastMCP("MD2DOCX-Converter")
@@ -645,7 +643,7 @@ async def convert_md_to_docx(
     debug: Optional[bool] = None
 ) -> str:
     """
-    将单个 Markdown 文件转换为 DOCX 格式
+    将单个 Markdown 文件转换为 DOCX 格式（向后兼容工具）
     
     Args:
         input_file: 输入的 Markdown 文件路径
@@ -662,8 +660,10 @@ async def convert_md_to_docx(
     """
     
     try:
-        result = await converter_manager.convert_single_file(
+        # 使用统一转换器的 DOCX 转换功能
+        result = await unified_converter_manager.convert_single_file(
             input_file=input_file,
+            output_format="docx",
             output_file=output_file,
             debug=debug
         )
@@ -714,7 +714,7 @@ async def batch_convert_md_to_docx(
     parallel_jobs: Optional[int] = None
 ) -> str:
     """
-    批量转换目录中的 Markdown 文件为 DOCX 格式
+    批量转换目录中的 Markdown 文件为 DOCX 格式（向后兼容工具）
     
     Args:
         input_dir: 输入目录路径
@@ -738,8 +738,10 @@ async def batch_convert_md_to_docx(
             original_jobs = config_manager.batch_settings.parallel_jobs
             config_manager.update_batch_settings(parallel_jobs=parallel_jobs)
         
-        result = await converter_manager.batch_convert(
+        # 使用统一转换器的批量转换功能，只转换 DOCX
+        result = await unified_converter_manager.batch_convert(
             input_dir=input_dir,
+            output_formats=["docx"],
             output_dir=output_dir,
             file_pattern=file_pattern
         )
@@ -800,7 +802,7 @@ async def list_markdown_files(
     """
     
     try:
-        result = await converter_manager.list_markdown_files(
+        result = await unified_converter_manager.list_markdown_files(
             directory=directory,
             recursive=recursive
         )

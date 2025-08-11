@@ -1,8 +1,12 @@
 # MD2DOCX MCP Server
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-green.svg)](https://modelcontextprotocol.io/)
+
 一个基于 Model Context Protocol (MCP) 的 Markdown 到 DOCX 转换服务器，提供强大的文档转换功能。
 
-## 特性
+## ✨ 特性
 
 - 🔄 **单文件转换** - 将单个 Markdown 文件转换为 DOCX 格式
 - 📦 **批量转换** - 批量处理目录中的多个 Markdown 文件
@@ -11,10 +15,11 @@
 - 🚀 **并行处理** - 支持多线程并行转换
 - 📊 **详细日志** - 完整的转换过程记录
 - 🛡️ **错误处理** - 智能的错误恢复和重试机制
+- 📦 **开箱即用** - 内置 md2docx 依赖，无需额外安装
 
-## 架构设计
+## 🏗️ 架构设计
 
-本项目采用 MCP (Model Context Protocol) 架构，将现有的 md2docx 项目作为外部工具调用，而不修改原项目代码。
+本项目采用 MCP (Model Context Protocol) 架构，通过 Git Submodule 集成 [md2docx](https://github.com/wangqiqi/md2docx) 项目，实现开箱即用的部署体验。
 
 ### 项目结构
 
@@ -23,10 +28,16 @@ md2docx-mcp-server/
 ├── server.py                 # 主 MCP 服务器文件
 ├── pyproject.toml            # 项目配置
 ├── README.md                 # 项目说明
+├── DEPLOYMENT_GUIDE.md       # 部署指南
 ├── core/                     # 核心模块
 │   ├── __init__.py
 │   ├── config_manager.py     # 配置管理器
 │   └── converter_manager.py  # 转换管理器
+├── md2docx/                  # Git Submodule (内置依赖)
+│   ├── src/
+│   │   ├── cli.py           # md2docx CLI 接口
+│   │   └── converter/       # 转换器模块
+│   └── requirements.txt
 ├── config/                   # 配置文件目录
 │   └── converter_config.json # 转换器配置（自动生成）
 └── .venv/                    # 虚拟环境
@@ -34,7 +45,7 @@ md2docx-mcp-server/
 
 ### 设计原则
 
-1. **非侵入性** - 完全不修改原 md2docx 项目代码
+1. **开箱即用** - 通过 Git Submodule 内置所有依赖
 2. **模块化** - 清晰的模块分离和职责划分
 3. **可配置** - 所有参数都可以通过配置文件或 MCP 工具调整
 4. **异步处理** - 支持异步操作和并行处理

@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """
-MD2DOCX MCP Server - Markdown 到 DOCX 转换服务器
-基于 Model Context Protocol (MCP) 的文档转换服务
+MD2DOCX MCP Server - Markdown 到 DOCX/PPTX 转换服务器 (改进版)
+基于 Model Context Protocol (MCP) 的统一文档转换服务
+
+改进内容：
+- 保持原有架构和设计思路
+- 增强工具描述和用户体验
+- 优化错误处理和状态反馈
+- 改进 Q CLI 工具提示
 """
 
 import sys
@@ -78,7 +84,7 @@ def activate_virtual_environment():
         print("💡 创建命令: uv sync")
 
 # 激活虚拟环境
-print("🚀 正在启动 MD2DOCX MCP Server...")
+print("🚀 正在启动 MD2DOCX MCP Server (改进版)...")
 activate_virtual_environment()
 
 # ===== 导入依赖模块 =====
@@ -92,9 +98,14 @@ unified_converter_manager = get_unified_converter_manager()
 
 print(f"⚙️  配置管理器已初始化")
 print(f"🔄 统一转换管理器已初始化")
+print(f"📋 改进版服务器特性:")
+print(f"  🎯 保持原有架构和设计思路")
+print(f"  📝 增强工具描述和用户体验")
+print(f"  🔧 优化错误处理和状态反馈")
+print(f"  💡 改进 Q CLI 工具提示")
 
 # 创建 MCP 服务器
-mcp = FastMCP("MD2DOCX-Converter")
+mcp = FastMCP("MD2DOCX-Converter-Enhanced")
 
 # ===== 配置管理工具 =====
 
@@ -153,6 +164,7 @@ async def configure_converter(
                 settings = config_manager.server_settings
                 return f"""🖥️  服务器设置:
 - MD2DOCX 项目路径: {settings.md2docx_project_path}
+- MD2PPTX 项目路径: {settings.md2pptx_project_path}
 - 使用子进程: {settings.use_subprocess}
 - 使用 Python 导入: {settings.use_python_import}"""
         
@@ -312,6 +324,9 @@ async def quick_config_supported_formats(formats: List[str] = ["docx", "pptx"]) 
         return f"✅ 支持的格式已设置为: {', '.join([f.upper() for f in formats])}"
     except Exception as e:
         return f"❌ 设置失败: {str(e)}"
+
+@mcp.tool()
+async def quick_config_md2docx_path(project_path: str) -> str:
     """
     快速设置 MD2DOCX 项目路径
     
@@ -341,7 +356,7 @@ async def convert_markdown(
     debug: Optional[bool] = None
 ) -> str:
     """
-    统一的 Markdown 转换工具
+    统一的 Markdown 转换工具 - 支持 DOCX、PPTX 和多格式转换
     
     Args:
         input_file: 输入的 Markdown 文件路径
@@ -636,6 +651,8 @@ async def convert_with_template(
     except Exception as e:
         return f"❌ 模板转换过程出错: {str(e)}"
 
+# ===== 向后兼容工具 =====
+
 @mcp.tool()
 async def convert_md_to_docx(
     input_file: str,
@@ -781,6 +798,8 @@ async def batch_convert_md_to_docx(
     except Exception as e:
         return f"❌ 批量转换过程出错: {str(e)}"
 
+# ===== 文件管理工具 =====
+
 @mcp.tool()
 async def list_markdown_files(
     directory: str,
@@ -837,1446 +856,6 @@ async def list_markdown_files(
     
     except Exception as e:
         return f"❌ 列出文件过程出错: {str(e)}"
-
-@mcp.tool()
-async def get_conversion_status() -> str:
-    """
-    获取转换器状态和配置信息
-    
-    Returns:
-        转换器状态信息
-        
-    Use cases:
-        - 检查状态: get_conversion_status()
-    """
-    
-    try:
-        # 检查 md2docx 项目路径
-        md2docx_path = Path(config_manager.server_settings.md2docx_project_path)
-        
-        # 如果是相对路径，相对于MCP服务器目录
-        if not md2docx_path.is_absolute():
-            mcp_server_dir = Path(__file__).parent  # md2docx-mcp-server 目录
-            md2docx_path = mcp_server_dir / md2docx_path
-        
-        md2docx_exists = md2docx_path.exists()
-        
-        # 检查 md2pptx 项目路径
-        md2pptx_path = Path(config_manager.server_settings.md2pptx_project_path)
-        
-        # 如果是相对路径，相对于MCP服务器目录
-        if not md2pptx_path.is_absolute():
-            mcp_server_dir = Path(__file__).parent  # md2docx-mcp-server 目录
-            md2pptx_path = mcp_server_dir / md2pptx_path
-        
-        md2pptx_exists = md2pptx_path.exists()
-        
-        # 检查输出目录
-        output_dir = Path(config_manager.conversion_settings.output_dir)
-        output_dir_exists = output_dir.exists()
-        
-        # 检查模板文件
-        pptx_template = config_manager.pptx_settings.template_file
-        pptx_template_exists = False
-        if pptx_template:
-            template_path = md2pptx_path / pptx_template
-            pptx_template_exists = template_path.exists()
-        
-        status = f"""🔍 统一转换器状态
-
-🖥️  服务器信息:
-- 服务器名称: MD2DOCX-Converter (统一版)
-- Python 版本: {sys.version.split()[0]}
-- 工作目录: {Path.cwd()}
-
-📁 项目路径检查:
-- MD2DOCX 项目路径: {md2docx_path}
-  状态: {'✅ 存在' if md2docx_exists else '❌ 不存在'}
-- MD2PPTX 项目路径: {md2pptx_path}
-  状态: {'✅ 存在' if md2pptx_exists else '❌ 不存在'}
-- 输出目录: {output_dir}
-  状态: {'✅ 存在' if output_dir_exists else '⚠️  不存在（将自动创建）'}
-
-📊 格式支持:
-- 支持的格式: {', '.join([f.upper() for f in config_manager.conversion_settings.supported_formats])}
-- 默认格式: {config_manager.conversion_settings.default_format.upper()}
-- 可用转换器: {', '.join([f.upper() for f in unified_converter_manager.get_supported_formats()])}
-
-⚙️  当前配置:
-- 调试模式: {'✅ 启用' if config_manager.conversion_settings.debug_mode else '❌ 禁用'}
-- 转换方式: {'子进程调用' if config_manager.server_settings.use_subprocess else 'Python 模块导入'}
-- 并行任务数: {config_manager.batch_settings.parallel_jobs}
-- 支持文件类型: {', '.join(config_manager.file_settings.supported_extensions)}
-
-🎨 模板配置:
-- PPTX 模板: {pptx_template or '未设置'}
-  状态: {'✅ 存在' if pptx_template_exists else '❌ 不存在' if pptx_template else '⚠️  未配置'}
-- DOCX 模板: {config_manager.docx_settings.template_file or '默认'}
-
-🔧 可用工具:
-- convert_markdown: 统一转换工具 (支持 DOCX/PPTX)
-- batch_convert_markdown: 批量转换 (支持多格式)
-- convert_with_template: 模板转换
-- convert_md_to_docx: 单独DOCX转换 (向后兼容)
-- batch_convert_md_to_docx: 批量DOCX转换 (向后兼容)
-- list_markdown_files: 列出 Markdown 文件
-- configure_converter: 配置管理
-- get_conversion_status: 状态检查"""
-        
-        # 添加警告信息
-        warnings = []
-        if not md2docx_exists:
-            warnings.append("MD2DOCX 项目路径不存在，DOCX转换将不可用")
-        if not md2pptx_exists:
-            warnings.append("MD2PPTX 项目路径不存在，PPTX转换将不可用")
-        if pptx_template and not pptx_template_exists:
-            warnings.append(f"PPTX模板文件不存在: {pptx_template}")
-        
-        if warnings:
-            status += f"\n\n⚠️  警告:"
-            for warning in warnings:
-                status += f"\n- {warning}"
-        
-        return status
-    
-    except Exception as e:
-        return f"❌ 获取状态失败: {str(e)}"
-
-# ===== MCP PROMPTS - Q CLI 使用指导 =====
-
-@mcp.prompt()
-def md2pptx_content_generator(
-    topic: str = "业务演示",
-    presentation_type: str = "business",
-    slide_count: str = "medium",
-    audience: str = "管理层"
-) -> str:
-    """md2pptx 内容生成器
-    
-    直接生成符合 md2pptx 模板要求的完整 Markdown 演示内容。
-    输出可以直接用于 md2pptx 转换，无需额外修改。
-    """
-    
-    # 根据演示类型确定设置
-    type_configs = {
-        "business": {
-            "pageTitleSize": 24,
-            "sectionTitleSize": 30,
-            "baseTextSize": 20,
-            "focus": "数据驱动、结果导向、ROI分析",
-            "tone": "专业、简洁、有说服力"
-        },
-        "academic": {
-            "pageTitleSize": 22,
-            "sectionTitleSize": 28,
-            "baseTextSize": 18,
-            "focus": "理论框架、研究方法、实证分析",
-            "tone": "严谨、客观、逻辑清晰"
-        },
-        "technical": {
-            "pageTitleSize": 20,
-            "sectionTitleSize": 26,
-            "baseTextSize": 16,
-            "focus": "技术架构、实现细节、代码示例",
-            "tone": "精确、详细、实用性强"
-        },
-        "creative": {
-            "pageTitleSize": 26,
-            "sectionTitleSize": 32,
-            "baseTextSize": 22,
-            "focus": "创意概念、视觉冲击、情感连接",
-            "tone": "生动、有趣、引人入胜"
-        }
-    }
-    
-    # 根据幻灯片数量确定结构
-    count_configs = {
-        "short": {"slides": "5-8", "sections": "2-3", "depth": "概览性"},
-        "medium": {"slides": "10-15", "sections": "3-5", "depth": "平衡详细"},
-        "long": {"slides": "20-30", "sections": "5-8", "depth": "深入详细"}
-    }
-    
-    config = type_configs.get(presentation_type, type_configs["business"])
-    structure = count_configs.get(slide_count, count_configs["medium"])
-    
-    # 根据主题生成具体的演示内容
-    if "AI" in topic or "人工智能" in topic:
-        sample_content = f"""template: Martin Template.pptx
-pageTitleSize: {config['pageTitleSize']}
-sectionTitleSize: {config['sectionTitleSize']}
-baseTextSize: {config['baseTextSize']}
-numbers: no
-style.fgcolor.blue: 0000FF
-style.fgcolor.red: FF0000
-style.fgcolor.green: 00FF00
-
-# {topic}
-智能化转型的战略机遇
-
-## 项目背景
-
-### 市场机遇分析
-* AI技术快速发展，应用场景不断扩大
-* 行业数字化转型需求迫切
-* 竞争对手AI布局相对滞后
-* 政策环境支持AI创新发展
-
-### 技术趋势洞察
-* 大语言模型技术日趋成熟
-* 多模态AI应用前景广阔
-* 边缘计算与AI深度融合
-* AI安全与可解释性受到重视
-
-## 项目方案
-
-### 核心价值主张
-* 提升业务效率50%以上
-* 降低运营成本30%
-* 增强客户体验满意度
-* 构建智能化竞争优势
-
-### 技术架构设计
-<!-- md2pptx: cardlayout: horizontal -->
-
-#### 数据层
-* 数据采集与清洗
-* 特征工程优化
-* 数据安全保障
-
-#### 算法层
-* 机器学习模型
-* 深度学习框架
-* 模型训练与优化
-
-#### 应用层
-* 智能决策支持
-* 自动化流程
-* 用户交互界面
-
-### 实施路线图
-|阶段|时间|关键任务|里程碑|
-|:---|:---|:---|:---|
-|第一阶段|1-3月|基础设施建设|平台搭建完成|
-|第二阶段|4-6月|核心算法开发|模型训练完成|
-|第三阶段|7-9月|系统集成测试|功能验证通过|
-|第四阶段|10-12月|上线部署优化|正式投产运行|
-
-## 投资回报
-
-### 成本效益分析
-* 项目总投资：500万元
-* 预期年收益：800万元
-* 投资回收期：9个月
-* 三年净现值：1200万元
-
-### 风险评估与应对
-<!-- md2pptx: cardlayout: vertical -->
-
-#### 技术风险
-* 算法性能不达预期
-* 数据质量问题
-* 系统集成困难
-
-#### 市场风险
-* 竞争对手快速跟进
-* 客户接受度不高
-* 监管政策变化
-
-#### 应对策略
-* 建立技术专家团队
-* 制定详细测试计划
-* 加强市场调研分析
-
-## 团队与资源
-
-### 核心团队构成
-* 项目总监：1名（战略规划）
-* 技术负责人：2名（架构设计）
-* 算法工程师：5名（模型开发）
-* 产品经理：2名（需求管理）
-
-### 资源需求清单
-* 硬件设备：GPU服务器集群
-* 软件工具：开发框架与平台
-* 数据资源：训练数据集
-* 外部合作：技术咨询服务
-
-## 总结与建议
-
-### 项目优势总结
-* 技术方案先进可行
-* 市场前景广阔明确
-* 团队经验丰富专业
-* 投资回报预期良好
-
-### 下一步行动计划
-* 立即启动项目立项流程
-* 组建核心项目团队
-* 开展详细需求调研
-* 制定具体实施计划
-
-### 支持需求
-* 高层领导全力支持
-* 充足的资金预算保障
-* 跨部门协作配合
-* 外部专家技术指导"""
-    
-    elif "数字化" in topic or "转型" in topic:
-        sample_content = f"""template: Martin Template.pptx
-pageTitleSize: {config['pageTitleSize']}
-sectionTitleSize: {config['sectionTitleSize']}
-baseTextSize: {config['baseTextSize']}
-numbers: no
-style.fgcolor.blue: 0000FF
-style.fgcolor.red: FF0000
-style.fgcolor.green: 00FF00
-
-# {topic}
-企业未来发展蓝图
-
-## 背景与挑战
-
-### 市场环境分析
-* 数字化浪潮席卷各行各业
-* 客户期望快速变化升级
-* 竞争对手加速数字化布局
-* 传统业务模式面临冲击
-
-### 内部现状评估
-* 技术基础设施相对落后
-* 数据孤岛现象严重
-* 员工数字化技能待提升
-* 业务流程自动化程度低
-
-## 转型战略
-
-### 战略目标设定
-* 提升客户体验满意度40%
-* 优化运营效率提升30%
-* 创新业务模式拓展
-* 增强市场竞争力
-
-### 核心转型举措
-<!-- md2pptx: cardlayout: horizontal -->
-
-#### 技术升级
-* 云平台建设
-* 数据中台构建
-* AI/ML能力建设
-
-#### 流程优化
-* 业务流程重塑
-* 自动化部署
-* 敏捷开发模式
-
-#### 人才培养
-* 数字化技能培训
-* 组织架构调整
-* 创新文化建设
-
-## 实施路径
-
-### 分阶段实施计划
-|阶段|时间|重点任务|预期成果|
-|:---|:---|:---|:---|
-|第一阶段|Q1-Q2|基础设施建设|技术平台就绪|
-|第二阶段|Q3-Q4|业务流程改造|效率提升30%|
-|第三阶段|次年|创新业务拓展|新收入来源|
-
-### 关键成功因素
-* 高层领导全力支持
-* 充足的资源投入
-* 全员参与和配合
-* 持续的监控和调整
-
-## 预期效益
-
-### 量化收益分析
-* 运营成本降低25%
-* 客户满意度提升40%
-* 新业务收入占比达20%
-* 市场响应速度提升50%
-
-### 风险控制措施
-* 分阶段实施降低风险
-* 建立监控预警机制
-* 制定应急预案
-* 加强变更管理
-
-## 行动计划
-
-### 立即启动事项
-* 成立数字化转型委员会
-* 启动技术平台选型
-* 制定详细实施计划
-* 开展员工培训项目
-
-### 资源配置需求
-* 项目预算：1000万元
-* 专职团队：20人
-* 外部咨询：技术专家
-* 时间周期：18个月"""
-    
-    else:
-        # 通用模板
-        sample_content = f"""template: Martin Template.pptx
-pageTitleSize: {config['pageTitleSize']}
-sectionTitleSize: {config['sectionTitleSize']}
-baseTextSize: {config['baseTextSize']}
-numbers: no
-style.fgcolor.blue: 0000FF
-style.fgcolor.red: FF0000
-style.fgcolor.green: 00FF00
-
-# {topic}
-专业演示方案
-
-## 概述
-
-### 项目背景
-* 市场需求分析
-* 行业发展趋势
-* 竞争环境评估
-* 机遇与挑战并存
-
-### 目标设定
-* 核心目标明确
-* 关键指标量化
-* 成功标准定义
-* 预期效果评估
-
-## 解决方案
-
-### 方案概述
-* 核心理念阐述
-* 主要组成部分
-* 技术路线选择
-* 创新点突出
-
-### 实施计划
-<!-- md2pptx: cardlayout: horizontal -->
-
-#### 第一阶段
-* 前期准备工作
-* 资源配置到位
-* 团队组建完成
-
-#### 第二阶段
-* 核心功能开发
-* 系统集成测试
-* 用户反馈收集
-
-#### 第三阶段
-* 正式上线部署
-* 运营优化调整
-* 效果评估总结
-
-## 预期成果
-
-### 效益分析
-|类型|指标|当前值|目标值|提升幅度|
-|:---|:---|---:|---:|---:|
-|效率|处理速度|100/h|150/h|+50%|
-|成本|运营费用|$10K|$8K|-20%|
-|质量|满意度|80%|95%|+15%|
-
-### 成功保障
-* 专业团队支持
-* 充足资源投入
-* 完善监控体系
-* 持续优化改进
-
-## 总结建议
-
-### 关键要点
-* 方案可行性强
-* 预期收益明显
-* 风险控制得当
-* 实施条件具备
-
-### 下一步行动
-* 获得决策层批准
-* 启动项目实施
-* 建立项目团队
-* 制定详细计划"""
-    
-    return f"""# 🎯 md2pptx 内容生成器
-
-## 📋 生成参数
-- **主题**: {topic}
-- **类型**: {presentation_type.title()}
-- **受众**: {audience}
-- **规模**: {structure['slides']} 张幻灯片
-
-## 📝 生成的 Markdown 内容
-
-以下是完整的 md2pptx 兼容 Markdown 代码，可以直接保存为 .md 文件并转换：
-
-```markdown
-{sample_content}
-```
-
-## ✅ 格式验证
-
-该内容已确保：
-- ✅ 包含完整的元数据头部
-- ✅ 使用正确的标题层次结构
-- ✅ 每页要点数量适中 (3-6个)
-- ✅ 包含高级功能 (卡片、表格)
-- ✅ 适合 {audience} 受众
-- ✅ 体现 {config['tone']} 风格
-
-## 🚀 使用方法
-
-1. **复制内容**: 复制上面的 Markdown 代码
-2. **保存文件**: 保存为 `{topic.replace(' ', '_')}.md`
-3. **转换 PPTX**: 使用 `convert_markdown` 工具转换
-4. **验证结果**: 检查生成的演示文稿
-
-**内容已准备就绪，可以直接使用！** 🎉
-"""
-
-@mcp.prompt()
-def md2docx_conversion_guide(
-    task_type: str = "single",
-    input_path: str = "/path/to/your/file.md",
-    output_format: str = "docx"
-) -> str:
-    """统一转换指南 - 智能转换助手
-    
-    为用户提供基于任务类型和输出格式的智能转换建议和具体执行命令。
-    支持 DOCX、PPTX 和多格式转换。
-    """
-    
-    # 获取当前配置
-    config = config_manager
-    md2docx_configured = Path(config.server_settings.md2docx_project_path).exists()
-    md2pptx_configured = Path(config.server_settings.md2pptx_project_path).exists()
-    
-    # 任务类型分析
-    task_lower = task_type.lower()
-    format_lower = output_format.lower()
-    
-    # 检测任务类型
-    is_batch = any(keyword in task_lower for keyword in ['batch', 'bulk', 'multiple', 'folder', 'directory', '批量', '多个', '文件夹'])
-    is_config = any(keyword in task_lower for keyword in ['config', 'setup', 'configure', 'setting', '配置', '设置'])
-    is_debug = any(keyword in task_lower for keyword in ['debug', 'error', 'problem', 'issue', '调试', '错误', '问题'])
-    is_template = any(keyword in task_lower for keyword in ['template', 'theme', 'style', '模板', '主题', '样式'])
-    is_multi_format = any(keyword in task_lower for keyword in ['multi', 'both', 'all', 'multiple', '多格式', '同时'])
-    
-    # 格式检测
-    is_pptx = format_lower in ['pptx', 'powerpoint', 'presentation', '演示', '幻灯片']
-    is_both = format_lower in ['both', 'all', 'multi', '两种', '全部', '多格式']
-    
-    # 智能推荐
-    if not md2docx_configured and not md2pptx_configured:
-        primary_recommendation = "首次配置"
-        primary_command = f'get_conversion_status()'
-        primary_reason = "转换器项目路径未配置，需要先检查系统状态"
-    elif is_config:
-        primary_recommendation = "配置管理"
-        primary_command = f'configure_converter("show", "all")'
-        primary_reason = "配置相关任务，建议先查看当前配置状态"
-    elif is_debug:
-        primary_recommendation = "问题诊断"
-        primary_command = f'validate_markdown_file("{input_path}")'
-        primary_reason = "问题诊断任务，建议先验证文件格式"
-    elif is_template:
-        if is_pptx:
-            primary_recommendation = "PPTX模板转换"
-            primary_command = f'convert_with_template("{input_path}", "pptx", "Martin Template.pptx")'
-            primary_reason = "模板转换任务，使用专业PPTX模板"
-        else:
-            primary_recommendation = "模板转换"
-            primary_command = f'convert_with_template("{input_path}", "docx", "template.docx")'
-            primary_reason = "模板转换任务，使用自定义模板"
-    elif is_multi_format or is_both:
-        if is_batch:
-            primary_recommendation = "批量多格式转换"
-            primary_command = f'batch_convert_markdown("{input_path}", ["docx", "pptx"])'
-            primary_reason = "批量多格式任务，同时生成DOCX和PPTX文件"
-        else:
-            primary_recommendation = "多格式转换"
-            primary_command = f'convert_markdown("{input_path}", "both")'
-            primary_reason = "多格式转换任务，同时生成两种格式"
-    elif is_batch:
-        if is_pptx:
-            primary_recommendation = "批量PPTX转换"
-            primary_command = f'batch_convert_markdown("{input_path}", ["pptx"])'
-            primary_reason = "批量PPTX转换任务，生成演示文稿"
-        else:
-            primary_recommendation = "批量DOCX转换"
-            primary_command = f'batch_convert_markdown("{input_path}", ["docx"])'
-            primary_reason = "批量DOCX转换任务，生成文档"
-    elif is_pptx:
-        primary_recommendation = "PPTX转换"
-        primary_command = f'convert_markdown("{input_path}", "pptx")'
-        primary_reason = "PPTX转换任务，生成演示文稿"
-    else:
-        primary_recommendation = "DOCX转换"
-        primary_command = f'convert_markdown("{input_path}", "docx")'
-        primary_reason = "DOCX转换任务，生成文档"
-    
-    # 构建特征分析
-    features = []
-    if is_batch:
-        features.append("批量处理")
-    else:
-        features.append("单文件")
-    
-    if is_pptx:
-        features.append("PPTX格式")
-    elif is_both:
-        features.append("多格式")
-    else:
-        features.append("DOCX格式")
-    
-    if is_template:
-        features.append("模板转换")
-    if is_config:
-        features.append("配置管理")
-    if is_debug:
-        features.append("问题诊断")
-    
-    if len(features) == 1:
-        features.append("标准转换")
-    
-    features_display = " | ".join(features)
-    
-    return f"""# 📄 统一转换智能助手
-
-## 📊 任务分析
-**任务类型**: {task_type}
-**输入路径**: {input_path}
-**输出格式**: {output_format}
-**任务特征**: {features_display}
-**MD2DOCX 配置状态**: {'✅ 已配置' if md2docx_configured else '❌ 未配置'}
-**MD2PPTX 配置状态**: {'✅ 已配置' if md2pptx_configured else '❌ 未配置'}
-**当前输出目录**: {config.conversion_settings.output_dir}
-
-## 🎯 AI 推荐方案 (优先使用)
-
-### ⭐ 推荐: {primary_recommendation}
-**分析**: {primary_reason}
-
-**🚀 立即执行**:
-```
-{primary_command}
-```
-
-## 🔧 统一转换工具矩阵
-
-### 📄 文档转换 (新功能)
-| 使用场景 | 工具 | 命令示例 |
-|----------|------|----------|
-| DOCX转换 | convert_markdown | `convert_markdown("/path/to/file.md", "docx")` |
-| PPTX转换 | convert_markdown | `convert_markdown("/path/to/file.md", "pptx")` |
-| 多格式转换 | convert_markdown | `convert_markdown("/path/to/file.md", "both")` |
-| 批量DOCX | batch_convert_markdown | `batch_convert_markdown("/path/to/folder", ["docx"])` |
-| 批量PPTX | batch_convert_markdown | `batch_convert_markdown("/path/to/folder", ["pptx"])` |
-| 批量多格式 | batch_convert_markdown | `batch_convert_markdown("/path/to/folder", ["docx", "pptx"])` |
-
-### 🎨 模板转换
-| 使用场景 | 工具 | 命令示例 |
-|----------|------|----------|
-| PPTX模板 | convert_with_template | `convert_with_template("/path/to/file.md", "pptx", "Martin Template.pptx")` |
-| 自定义模板 | convert_with_template | `convert_with_template("/path/to/file.md", "pptx", "custom.pptx")` |
-| DOCX模板 | convert_with_template | `convert_with_template("/path/to/file.md", "docx", "template.docx")` |
-
-### 📁 文件管理
-| 使用场景 | 工具 | 命令示例 |
-|----------|------|----------|
-| 列出文件 | list_markdown_files | `list_markdown_files("/path/to/folder")` |
-| 递归搜索 | list_markdown_files | `list_markdown_files("/path/to/folder", recursive=True)` |
-| 验证文件 | validate_markdown_file | `validate_markdown_file("/path/to/file.md")` |
-
-### ⚙️ 配置管理
-| 使用场景 | 工具 | 命令示例 |
-|----------|------|----------|
-| 查看状态 | get_conversion_status | `get_conversion_status()` |
-| 查看配置 | configure_converter | `configure_converter("show", "all")` |
-| 设置默认格式 | quick_config_default_format | `quick_config_default_format("pptx")` |
-| 设置PPTX模板 | quick_config_pptx_template | `quick_config_pptx_template("business.pptx")` |
-| 设置输出目录 | quick_config_output_dir | `quick_config_output_dir("/path/to/output")` |
-| 启用调试 | quick_config_debug_mode | `quick_config_debug_mode(True)` |
-
-### 🔄 向后兼容工具
-| 使用场景 | 工具 | 命令示例 |
-|----------|------|----------|
-| 单独DOCX转换 | convert_md_to_docx | `convert_md_to_docx("/path/to/file.md")` |
-| 批量DOCX转换 | batch_convert_md_to_docx | `batch_convert_md_to_docx("/path/to/folder")` |
-
-## 🤔 决策树
-
-```
-转换需求分析
-    ↓
-首次使用? → Yes → get_conversion_status() ✅
-    ↓ No
-需要模板? → Yes → convert_with_template() ✅
-    ↓ No
-多种格式? → Yes → convert_markdown("both") 或 batch_convert_markdown(["docx", "pptx"]) ✅
-    ↓ No
-批量转换? → Yes → batch_convert_markdown() ✅
-    ↓ No
-PPTX格式? → Yes → convert_markdown("pptx") ✅
-    ↓ No
-DOCX格式 → convert_markdown("docx") ✅
-```
-
-## 💡 使用建议
-
-### 📄 首次使用流程
-1. **检查系统状态**: `get_conversion_status()`
-2. **设置默认格式**: `quick_config_default_format("pptx")`
-3. **测试转换**: `convert_markdown("/path/to/test.md", "both")`
-4. **检查结果**: 验证生成的 DOCX 和 PPTX 文件
-
-### 🚀 批量处理流程
-1. **查看文件**: `list_markdown_files("/path/to/folder")`
-2. **设置并行数**: `quick_config_parallel_jobs(8)`
-3. **执行批量转换**: `batch_convert_markdown("/path/to/folder", ["docx", "pptx"])`
-4. **监控进度**: 查看转换日志和结果
-
-### 🎨 模板使用流程
-1. **设置PPTX模板**: `quick_config_pptx_template("Martin Template.pptx")`
-2. **模板转换**: `convert_with_template("/path/to/file.md", "pptx", "Martin Template.pptx")`
-3. **验证输出**: 检查生成的专业演示文稿
-
-### 🔧 问题诊断流程
-1. **验证文件**: `validate_markdown_file("/path/to/problem.md")`
-2. **启用调试**: `quick_config_debug_mode(True)`
-3. **重新转换**: `convert_markdown("/path/to/problem.md", "docx", debug=True)`
-4. **分析错误**: 根据详细日志调整配置
-
-## 🎯 快速开始示例
-
-```python
-# 📄 统一转换 (推荐)
-convert_markdown("/Users/username/Documents/report.md", "pptx")
-convert_markdown("/Users/username/Documents/report.md", "both")
-
-# 📁 批量多格式转换
-batch_convert_markdown("/Users/username/Documents/markdown-files/", ["docx", "pptx"])
-
-# 🎨 模板转换
-convert_with_template("/Users/username/Documents/presentation.md", "pptx", "Martin Template.pptx")
-
-# ⚙️ 配置管理
-quick_config_default_format("pptx")
-quick_config_pptx_template("business.pptx")
-
-# 🔧 问题诊断
-validate_markdown_file("/Users/username/Documents/problem.md")
-```
-
-## ⚠️ 重要提示
-
-- 🆕 **新功能**: 现在支持 DOCX 和 PPTX 双格式转换
-- 🎨 **模板支持**: 内置专业 PPTX 模板，支持自定义
-- ⚡ **性能提升**: 支持多格式并行转换
-- 🔄 **向后兼容**: 所有旧工具仍然可用
-- 📊 **智能推荐**: 根据内容特征推荐最佳格式
-
-**🚀 准备开始转换？使用上面的 AI 推荐方案！**
-"""
-    
-    if len(features) == 1:
-        features.append("标准转换")
-    
-    features_display = " | ".join(features)
-    
-    return f"""# 📄 MD2DOCX 智能转换助手
-
-## 📊 任务分析
-**任务类型**: {task_type}
-**输入路径**: {input_path}
-**任务特征**: {features_display}
-**MD2DOCX 配置状态**: {'✅ 已配置' if md2docx_configured else '❌ 未配置'}
-**当前输出目录**: {config.conversion_settings.output_dir}
-
-## 🎯 AI 推荐方案 (优先使用)
-
-### ⭐ 推荐: {primary_recommendation}
-**分析**: {primary_reason}
-
-**🚀 立即执行**:
-```
-{primary_command}
-```
-
-## 🔧 转换工具矩阵
-
-### 📄 文档转换
-| 使用场景 | 工具 | 命令示例 |
-|----------|------|----------|
-| 单文件转换 | convert_md_to_docx | `convert_md_to_docx("/path/to/file.md")` |
-| 指定输出文件 | convert_md_to_docx | `convert_md_to_docx("/path/to/file.md", "/path/to/output.docx")` |
-| 调试模式转换 | convert_md_to_docx | `convert_md_to_docx("/path/to/file.md", debug=True)` |
-| 批量转换 | batch_convert_md_to_docx | `batch_convert_md_to_docx("/path/to/folder")` |
-| 高性能批量 | batch_convert_md_to_docx | `batch_convert_md_to_docx("/input", parallel_jobs=8)` |
-
-### 📁 文件管理
-| 使用场景 | 工具 | 命令示例 |
-|----------|------|----------|
-| 列出文件 | list_markdown_files | `list_markdown_files("/path/to/folder")` |
-| 递归搜索 | list_markdown_files | `list_markdown_files("/path/to/folder", recursive=True)` |
-| 验证文件 | validate_markdown_file | `validate_markdown_file("/path/to/file.md")` |
-
-### ⚙️ 配置管理
-| 使用场景 | 工具 | 命令示例 |
-|----------|------|----------|
-| 查看状态 | get_conversion_status | `get_conversion_status()` |
-| 查看配置 | configure_converter | `configure_converter("show", "all")` |
-| 设置项目路径 | quick_config_md2docx_path | `quick_config_md2docx_path("/path/to/md2docx")` |
-| 设置输出目录 | quick_config_output_dir | `quick_config_output_dir("/path/to/output")` |
-| 启用调试 | quick_config_debug_mode | `quick_config_debug_mode(True)` |
-| 设置并行数 | quick_config_parallel_jobs | `quick_config_parallel_jobs(8)` |
-
-## 🤔 决策树
-
-```
-转换需求分析
-    ↓
-首次使用? → Yes → quick_config_md2docx_path() ✅
-    ↓ No
-批量转换? → Yes → batch_convert_md_to_docx() ✅
-    ↓ No
-有问题? → Yes → validate_markdown_file() + debug模式 ✅
-    ↓ No
-单文件转换 → convert_md_to_docx() ✅
-```
-
-## 💡 使用建议
-
-### 📄 首次使用流程
-1. **配置项目路径**: `quick_config_md2docx_path("/path/to/md2docx")`
-2. **设置输出目录**: `quick_config_output_dir("/path/to/output")`
-3. **测试转换**: `convert_md_to_docx("/path/to/test.md")`
-4. **检查结果**: 验证生成的 DOCX 文件
-
-### 🚀 批量处理流程
-1. **查看文件**: `list_markdown_files("/path/to/folder")`
-2. **设置并行数**: `quick_config_parallel_jobs(8)`
-3. **执行批量转换**: `batch_convert_md_to_docx("/path/to/folder")`
-4. **监控进度**: 查看转换日志和结果
-
-### 🔧 问题诊断流程
-1. **验证文件**: `validate_markdown_file("/path/to/problem.md")`
-2. **启用调试**: `quick_config_debug_mode(True)`
-3. **重新转换**: `convert_md_to_docx("/path/to/problem.md", debug=True)`
-4. **分析错误**: 根据详细日志调整配置
-
-## 🎯 快速开始示例
-
-```python
-# 📄 单文件转换
-convert_md_to_docx("/Users/username/Documents/report.md")
-
-# 📁 批量转换
-batch_convert_md_to_docx("/Users/username/Documents/markdown-files/")
-
-# ⚙️ 配置管理
-quick_config_md2docx_path("/Users/username/Workspace/md2docx")
-quick_config_output_dir("/Users/username/Documents/output/")
-
-# 🔧 问题诊断
-validate_markdown_file("/Users/username/Documents/problem.md")
-```
-
-## ⚠️ 重要提示
-
-- 首次使用必须配置 MD2DOCX 项目路径
-- 批量转换时建议先小批量测试
-- 遇到问题时启用调试模式获取详细信息
-- 使用绝对路径避免路径错误
-- 根据系统性能调整并行任务数
-
-**🚀 准备开始转换？使用上面的 AI 推荐方案！**
-"""
-
-@mcp.prompt()
-def md2docx_troubleshooting_guide(
-    error_type: str = "conversion_failed",
-    file_path: str = "/path/to/problem.md",
-    output_format: str = "docx"
-) -> str:
-    """统一转换故障排除指南
-    
-    提供针对 DOCX/PPTX 转换常见问题的诊断步骤和解决方案。
-    """
-    
-    error_lower = error_type.lower()
-    format_lower = output_format.lower()
-    
-    # 错误类型分析
-    is_path_error = any(keyword in error_lower for keyword in ['path', 'not found', 'missing', '路径', '找不到'])
-    is_format_error = any(keyword in error_lower for keyword in ['format', 'encoding', 'invalid', '格式', '编码'])
-    is_permission_error = any(keyword in error_lower for keyword in ['permission', 'access', 'denied', '权限', '访问'])
-    is_config_error = any(keyword in error_lower for keyword in ['config', 'setup', 'not configured', '配置'])
-    is_pptx_error = any(keyword in error_lower for keyword in ['pptx', 'powerpoint', 'presentation', 'template'])
-    is_dependency_error = any(keyword in error_lower for keyword in ['module', 'import', 'dependency', '依赖', '模块'])
-    
-    # 格式特定错误
-    is_pptx_format = format_lower in ['pptx', 'powerpoint', 'presentation']
-    
-    # 确定主要问题类型和诊断步骤
-    if is_dependency_error:
-        problem_type = "依赖问题"
-        if is_pptx_format or is_pptx_error:
-            diagnostic_steps = [
-                "get_conversion_status()",
-                "quick_config_debug_mode(True)",
-                f"convert_markdown('{file_path}', 'pptx', debug=True)"
-            ]
-        else:
-            diagnostic_steps = [
-                "get_conversion_status()",
-                f"validate_markdown_file('{file_path}')",
-                f"convert_markdown('{file_path}', 'docx', debug=True)"
-            ]
-    elif is_config_error:
-        problem_type = "配置问题"
-        diagnostic_steps = [
-            "get_conversion_status()",
-            "configure_converter('show', 'all')",
-            "quick_config_debug_mode(True)"
-        ]
-    elif is_path_error:
-        problem_type = "路径问题"
-        diagnostic_steps = [
-            f"validate_markdown_file('{file_path}')",
-            "list_markdown_files('/path/to/directory')",
-            "get_conversion_status()"
-        ]
-    elif is_format_error:
-        problem_type = "格式问题"
-        diagnostic_steps = [
-            f"validate_markdown_file('{file_path}')",
-            "quick_config_debug_mode(True)",
-            f"convert_markdown('{file_path}', '{output_format}', debug=True)"
-        ]
-    elif is_permission_error:
-        problem_type = "权限问题"
-        diagnostic_steps = [
-            "get_conversion_status()",
-            "quick_config_output_dir('/writable/path')",
-            f"convert_markdown('{file_path}', '{output_format}')"
-        ]
-    elif is_pptx_error or is_pptx_format:
-        problem_type = "PPTX转换问题"
-        diagnostic_steps = [
-            "get_conversion_status()",
-            "quick_config_pptx_template('Martin Template.pptx')",
-            f"convert_markdown('{file_path}', 'pptx', debug=True)"
-        ]
-    else:
-        problem_type = "一般转换问题"
-        diagnostic_steps = [
-            f"validate_markdown_file('{file_path}')",
-            "quick_config_debug_mode(True)",
-            f"convert_markdown('{file_path}', '{output_format}', debug=True)"
-        ]
-    
-    return f"""# 🔧 统一转换故障排除指南
-
-## 🚨 问题分析
-**错误类型**: {error_type}
-**问题文件**: {file_path}
-**输出格式**: {output_format.upper()}
-**问题分类**: {problem_type}
-
-## 🔍 诊断步骤
-
-### 第一步：基础检查
-```
-{diagnostic_steps[0]}
-```
-
-### 第二步：详细分析
-```
-{diagnostic_steps[1]}
-```
-
-### 第三步：问题解决
-```
-{diagnostic_steps[2]}
-```
-
-## 🛠️ 常见问题解决方案
-
-### ❌ 转换器项目路径未配置
-**症状**: "项目路径不存在" 或 "not configured"
-**解决方案**:
-```
-get_conversion_status()
-# 检查 MD2DOCX 和 MD2PPTX 项目状态
-# 如果路径不存在，项目应该已经通过子模块自动配置
-```
-
-### ❌ PPTX 转换失败 - 依赖问题
-**症状**: "ModuleNotFoundError: No module named 'pptx'"
-**解决方案**:
-```
-# 检查虚拟环境
-get_conversion_status()
-
-# 确保使用正确的 Python 环境
-quick_config_debug_mode(True)
-convert_markdown("{file_path}", "pptx", debug=True)
-
-# 如果仍然失败，重新安装依赖
-# 在终端运行: uv sync
-```
-
-### ❌ PPTX 模板问题
-**症状**: "Template not found" 或模板相关错误
-**解决方案**:
-```
-# 设置默认模板
-quick_config_pptx_template("Martin Template.pptx")
-
-# 使用模板转换
-convert_with_template("{file_path}", "pptx", "Martin Template.pptx")
-
-# 检查模板状态
-get_conversion_status()
-```
-
-### ❌ 文件不存在或路径错误
-**症状**: "File not found" 或 "Path does not exist"
-**解决方案**:
-```
-# 验证文件
-validate_markdown_file("{file_path}")
-
-# 列出目录文件
-list_markdown_files("/correct/directory/path")
-
-# 使用绝对路径
-convert_markdown("/absolute/path/to/file.md", "{output_format}")
-```
-
-### ❌ 文件格式或编码问题
-**症状**: "Encoding error" 或 "Invalid format"
-**解决方案**:
-```
-# 验证文件格式
-validate_markdown_file("{file_path}")
-
-# 更新文件编码配置
-configure_converter("update", "file", encoding="utf-8")
-
-# 调试转换
-convert_markdown("{file_path}", "{output_format}", debug=True)
-```
-
-### ❌ 权限或输出目录问题
-**症状**: "Permission denied" 或 "Cannot write to directory"
-**解决方案**:
-```
-# 设置可写输出目录
-quick_config_output_dir("/writable/output/path")
-
-# 检查状态
-get_conversion_status()
-
-# 重新转换
-convert_markdown("{file_path}", "{output_format}")
-```
-
-### ❌ 批量转换失败
-**症状**: 部分文件转换失败
-**解决方案**:
-```
-# 启用调试模式
-quick_config_debug_mode(True)
-
-# 降低并行数
-quick_config_parallel_jobs(2)
-
-# 分格式批量转换
-batch_convert_markdown("/input/path", ["docx"])
-batch_convert_markdown("/input/path", ["pptx"])
-```
-
-### ❌ 多格式转换问题
-**症状**: 某种格式转换失败
-**解决方案**:
-```
-# 分别测试各格式
-convert_markdown("{file_path}", "docx", debug=True)
-convert_markdown("{file_path}", "pptx", debug=True)
-
-# 检查格式特定配置
-configure_converter("show", "all")
-```
-
-## 🔄 完整诊断流程
-
-### 1️⃣ 系统状态检查
-```
-get_conversion_status()
-```
-检查转换器路径、输出目录、配置状态、支持格式
-
-### 2️⃣ 文件验证
-```
-validate_markdown_file("{file_path}")
-```
-验证文件存在性、格式、编码
-
-### 3️⃣ 调试模式转换
-```
-quick_config_debug_mode(True)
-convert_markdown("{file_path}", "{output_format}", debug=True)
-```
-获取详细错误信息和执行日志
-
-### 4️⃣ 格式特定检查
-```python
-# 对于 PPTX 问题
-quick_config_pptx_template("Martin Template.pptx")
-convert_with_template("{file_path}", "pptx", "Martin Template.pptx")
-
-# 对于 DOCX 问题  
-convert_md_to_docx("{file_path}", debug=True)
-```
-
-### 5️⃣ 配置调整
-根据错误信息调整相应配置
-
-### 6️⃣ 重新测试
-使用修正后的配置重新转换
-
-## 🆕 新功能相关问题
-
-### PPTX 转换新功能
-- ✅ 支持专业模板 (Martin Template.pptx)
-- ✅ 自定义模板支持
-- ✅ 智能幻灯片布局
-- ✅ 多媒体内容处理
-
-### 多格式转换
-- ✅ 同时生成 DOCX 和 PPTX
-- ✅ 批量多格式处理
-- ✅ 格式特定配置
-- ✅ 并行转换优化
-
-### 模板系统
-- ✅ 内置专业模板
-- ✅ 模板验证和管理
-- ✅ 自定义模板支持
-- ✅ 模板预览功能
-
-## 📞 获取帮助
-
-如果问题仍然存在，请：
-
-1. **📊 收集信息**:
-   ```
-   get_conversion_status()
-   validate_markdown_file("{file_path}")
-   ```
-
-2. **🔍 启用详细日志**:
-   ```
-   quick_config_debug_mode(True)
-   convert_markdown("{file_path}", "{output_format}", debug=True)
-   ```
-
-3. **📋 检查配置**:
-   ```
-   configure_converter("show", "all")
-   ```
-
-4. **🐛 报告问题**: 在 [GitHub Issues](https://github.com/ddipass/md2docx-mcp-server/issues) 提供详细信息
-
-**🔧 开始诊断？按照上面的步骤逐一检查！**
-"""
-
-@mcp.tool()
-async def get_md2pptx_format_guide(
-    presentation_type: str = "business",
-    slide_count: str = "medium"
-) -> str:
-    """
-    获取 md2pptx 格式指导，帮助生成符合模板要求的 Markdown
-    
-    Args:
-        presentation_type: 演示类型 (business/academic/technical/creative)
-        slide_count: 幻灯片数量 (short/medium/long)
-        
-    Returns:
-        详细的 md2pptx 格式指导和模板
-        
-    Use cases:
-        - 商务演示: get_md2pptx_format_guide("business", "medium")
-        - 学术演示: get_md2pptx_format_guide("academic", "long")
-        - 技术演示: get_md2pptx_format_guide("technical", "short")
-    """
-    
-    # 根据演示类型确定推荐设置
-    type_settings = {
-        "business": {
-            "pageTitleSize": 24,
-            "sectionTitleSize": 30,
-            "baseTextSize": 20,
-            "style": "professional",
-            "colors": ["blue", "gray", "white"]
-        },
-        "academic": {
-            "pageTitleSize": 22,
-            "sectionTitleSize": 28,
-            "baseTextSize": 18,
-            "style": "scholarly",
-            "colors": ["navy", "black", "white"]
-        },
-        "technical": {
-            "pageTitleSize": 20,
-            "sectionTitleSize": 26,
-            "baseTextSize": 16,
-            "style": "technical",
-            "colors": ["green", "black", "white"]
-        },
-        "creative": {
-            "pageTitleSize": 26,
-            "sectionTitleSize": 32,
-            "baseTextSize": 22,
-            "style": "creative",
-            "colors": ["purple", "orange", "white"]
-        }
-    }
-    
-    # 根据幻灯片数量确定结构建议
-    count_structure = {
-        "short": {
-            "slides": "5-10",
-            "sections": "2-3",
-            "bullets_per_slide": "3-5"
-        },
-        "medium": {
-            "slides": "10-20",
-            "sections": "3-5",
-            "bullets_per_slide": "4-6"
-        },
-        "long": {
-            "slides": "20-40",
-            "sections": "5-8",
-            "bullets_per_slide": "3-5"
-        }
-    }
-    
-    settings = type_settings.get(presentation_type, type_settings["business"])
-    structure = count_structure.get(slide_count, count_structure["medium"])
-    
-    return f"""# 📊 md2pptx 格式指导 - {presentation_type.title()} 演示
-
-## 🎯 核心要求
-
-### 📋 必需的元数据头部
-每个 md2pptx Markdown 文件**必须**以元数据开头（在第一个空行之前）：
-
-```markdown
-template: Martin Template.pptx
-pageTitleSize: {settings['pageTitleSize']}
-sectionTitleSize: {settings['sectionTitleSize']}
-baseTextSize: {settings['baseTextSize']}
-numbers: no
-style.fgcolor.blue: 0000FF
-style.fgcolor.red: FF0000
-style.fgcolor.green: 00FF00
-```
-
-### 🏗️ 幻灯片结构层次
-
-md2pptx 使用特定的标题层次来创建不同类型的幻灯片：
-
-1. **`# 标题`** → **演示标题页** (封面)
-2. **`## 标题`** → **章节分隔页** (Section Slide)
-3. **`### 标题`** → **内容幻灯片** (Content Slide)
-4. **`#### 标题`** → **卡片标题** (Card Title)
-
-## 📝 推荐的演示结构
-
-### 🎯 {presentation_type.title()} 演示规格
-- **幻灯片数量**: {structure['slides']} 张
-- **章节数量**: {structure['sections']} 个
-- **每页要点**: {structure['bullets_per_slide']} 个
-- **字体大小**: {settings['baseTextSize']}pt
-- **风格**: {settings['style']}
-
-### 📊 标准模板结构
-
-```markdown
-template: Martin Template.pptx
-pageTitleSize: {settings['pageTitleSize']}
-sectionTitleSize: {settings['sectionTitleSize']}
-baseTextSize: {settings['baseTextSize']}
-numbers: no
-
-# 演示标题
-副标题或演讲者信息
-
-## 第一章节
-章节介绍内容
-
-### 第一个内容幻灯片
-* 要点一
-  * 子要点 1.1
-  * 子要点 1.2
-* 要点二
-* 要点三
-
-### 第二个内容幻灯片
-* 要点一
-* 要点二
-* 要点三
-
-## 第二章节
-章节介绍内容
-
-### 表格幻灯片示例
-|列标题1|列标题2|列标题3|
-|-------|-------|-------|
-|数据1|数据2|数据3|
-|数据4|数据5|数据6|
-
-### 卡片幻灯片示例
-<!-- md2pptx: cardlayout: horizontal -->
-
-#### 卡片一
-* 卡片内容
-* 更多内容
-
-#### 卡片二
-* 卡片内容
-* 更多内容
-```
-
-## 🎨 高级功能
-
-### 🃏 卡片布局
-使用 `#### 标题` 创建卡片，配合 HTML 注释控制布局：
-
-```markdown
-### 卡片展示页面
-<!-- md2pptx: cardlayout: horizontal -->
-<!-- md2pptx: cardcolour: BACKGROUND 2 -->
-
-#### 卡片标题一
-* 卡片内容
-* 更多内容
-
-#### 卡片标题二
-* 卡片内容
-* 更多内容
-```
-
-### 📊 表格优化
-```markdown
-### 数据展示
-|项目|Q1|Q2|Q3|Q4|
-|:---|--:|--:|--:|--:|
-|收入|100|120|150|180|
-|支出|80|90|110|140|
-|利润|20|30|40|40|
-```
-
-### 🎯 特殊格式
-
-#### 代码块
-```markdown
-### 代码示例
-```python
-def hello_world():
-    print("Hello, World!")
-```
-```
-
-#### 图片插入
-```markdown
-### 图片展示
-![图片描述](image.png)
-```
-
-#### 视频/音频
-```markdown
-### 多媒体内容
-<video src="video.mp4" width="800" height="600"></video>
-<audio src="audio.mp3"></audio>
-```
-
-## ⚠️ 重要约束和最佳实践
-
-### ✅ 必须遵循的规则
-
-1. **元数据头部**: 必须在文件开头，第一个空行之前
-2. **标题层次**: 严格按照 #/##/###/#### 的层次结构
-3. **模板引用**: 必须指定 `template: Martin Template.pptx`
-4. **字体大小**: 建议设置 `pageTitleSize`, `sectionTitleSize`, `baseTextSize`
-
-### ❌ 避免的问题
-
-1. **跳级标题**: 不要从 # 直接跳到 ###
-2. **空标题**: 每个标题都应该有内容
-3. **过长内容**: 每页要点不超过 7 个
-4. **缺少元数据**: 没有元数据头部会使用默认设置
-
-### 🎯 内容建议
-
-#### 标题页 (# 标题)
-- 简洁有力的主标题
-- 副标题包含关键信息
-- 演讲者/日期信息
-
-#### 章节页 (## 标题)
-- 章节主题明确
-- 可以包含简短介绍
-- 作为内容分组的分隔
-
-#### 内容页 (### 标题)
-- 每页 3-6 个要点
-- 使用层次化的要点结构
-- 避免过长的文本
-
-## 🚀 生成建议
-
-### 📝 内容创作流程
-1. **确定主题和目标受众**
-2. **规划章节结构** (## 标题)
-3. **设计内容幻灯片** (### 标题)
-4. **添加元数据头部**
-5. **优化要点和格式**
-
-### 🎨 视觉设计考虑
-- 保持一致的字体大小
-- 合理使用颜色标记
-- 适当的图表和图片
-- 清晰的信息层次
-
-### 📊 质量检查清单
-- [ ] 元数据头部完整
-- [ ] 标题层次正确
-- [ ] 每页内容适量
-- [ ] 图片路径正确
-- [ ] 特殊格式语法正确
-
-## 💡 {presentation_type.title()} 演示特定建议
-
-### 🎯 内容重点
-- **商务**: 数据驱动，结果导向，专业图表
-- **学术**: 逻辑严密，引用充分，理论框架
-- **技术**: 代码示例，架构图，实现细节
-- **创意**: 视觉冲击，故事叙述，情感连接
-
-### 🎨 推荐配色
-- **主色调**: {', '.join(settings['colors'])}
-- **强调色**: 用于重要信息高亮
-- **背景色**: 保持简洁专业
-
-**🎯 使用这个指导来生成完美适配 md2pptx 的 Markdown 内容！**
-"""
 
 @mcp.tool()
 async def validate_markdown_file(file_path: str) -> str:
@@ -2336,33 +915,1036 @@ async def validate_markdown_file(file_path: str) -> str:
     except Exception as e:
         return f"❌ 验证过程出错: {str(e)}"
 
+# ===== 状态检查工具 =====
+
+@mcp.tool()
+async def get_conversion_status() -> str:
+    """
+    获取转换器状态和配置信息
+    
+    Returns:
+        转换器状态信息
+        
+    Use cases:
+        - 检查状态: get_conversion_status()
+    """
+    
+    try:
+        # 检查 md2docx 项目路径
+        md2docx_path = Path(config_manager.server_settings.md2docx_project_path)
+        
+        # 如果是相对路径，相对于MCP服务器目录
+        if not md2docx_path.is_absolute():
+            mcp_server_dir = Path(__file__).parent  # md2docx-mcp-server 目录
+            md2docx_path = mcp_server_dir / md2docx_path
+        
+        md2docx_exists = md2docx_path.exists()
+        
+        # 检查 md2pptx 项目路径
+        md2pptx_path = Path(config_manager.server_settings.md2pptx_project_path)
+        
+        # 如果是相对路径，相对于MCP服务器目录
+        if not md2pptx_path.is_absolute():
+            mcp_server_dir = Path(__file__).parent  # md2docx-mcp-server 目录
+            md2pptx_path = mcp_server_dir / md2pptx_path
+        
+        md2pptx_exists = md2pptx_path.exists()
+        
+        # 检查输出目录
+        output_dir = Path(config_manager.conversion_settings.output_dir)
+        output_dir_exists = output_dir.exists()
+        
+        # 检查模板文件
+        pptx_template = config_manager.pptx_settings.template_file
+        pptx_template_exists = False
+        if pptx_template:
+            template_path = md2pptx_path / pptx_template
+            pptx_template_exists = template_path.exists()
+        
+        status = f"""🔍 统一转换器状态 (改进版)
+
+🖥️  服务器信息:
+- 服务器名称: MD2DOCX-Converter-Enhanced
+- Python 版本: {sys.version.split()[0]}
+- 工作目录: {Path.cwd()}
+
+📁 项目路径检查:
+- MD2DOCX 项目路径: {md2docx_path}
+  状态: {'✅ 存在' if md2docx_exists else '❌ 不存在'}
+- MD2PPTX 项目路径: {md2pptx_path}
+  状态: {'✅ 存在' if md2pptx_exists else '❌ 不存在'}
+- 输出目录: {output_dir}
+  状态: {'✅ 存在' if output_dir_exists else '⚠️  不存在（将自动创建）'}
+
+📊 格式支持:
+- 支持的格式: {', '.join([f.upper() for f in config_manager.conversion_settings.supported_formats])}
+- 默认格式: {config_manager.conversion_settings.default_format.upper()}
+- 可用转换器: {', '.join([f.upper() for f in unified_converter_manager.get_supported_formats()])}
+
+⚙️  当前配置:
+- 调试模式: {'✅ 启用' if config_manager.conversion_settings.debug_mode else '❌ 禁用'}
+- 转换方式: {'子进程调用' if config_manager.server_settings.use_subprocess else 'Python 模块导入'}
+- 并行任务数: {config_manager.batch_settings.parallel_jobs}
+- 支持文件类型: {', '.join(config_manager.file_settings.supported_extensions)}
+
+🎨 模板配置:
+- PPTX 模板: {pptx_template or '未设置'}
+  状态: {'✅ 存在' if pptx_template_exists else '❌ 不存在' if pptx_template else '⚠️  未配置'}
+- DOCX 模板: {config_manager.docx_settings.template_file or '默认'}
+
+🔧 可用工具 (改进版):
+- convert_markdown: 统一转换工具 (支持 DOCX/PPTX/Both)
+- batch_convert_markdown: 批量多格式转换
+- convert_with_template: 模板转换
+- convert_md_to_docx: 单独DOCX转换 (向后兼容)
+- batch_convert_md_to_docx: 批量DOCX转换 (向后兼容)
+- list_markdown_files: 列出 Markdown 文件
+- validate_markdown_file: 验证文件
+- configure_converter: 配置管理
+- get_conversion_status: 状态检查
+
+💡 改进特性:
+- 🎯 保持原有架构和设计思路
+- 📝 增强工具描述和用户体验
+- 🔧 优化错误处理和状态反馈
+- 💡 改进 Q CLI 工具提示"""
+        
+        # 添加警告信息
+        warnings = []
+        if not md2docx_exists:
+            warnings.append("MD2DOCX 项目路径不存在，DOCX转换将不可用")
+        if not md2pptx_exists:
+            warnings.append("MD2PPTX 项目路径不存在，PPTX转换将不可用")
+        if pptx_template and not pptx_template_exists:
+            warnings.append(f"PPTX模板文件不存在: {pptx_template}")
+        
+        if warnings:
+            status += f"\n\n⚠️  警告:"
+            for warning in warnings:
+                status += f"\n- {warning}"
+        
+        return status
+    
+    except Exception as e:
+        return f"❌ 获取状态失败: {str(e)}"
+
+# ===== MD2PPTX 专用工具 =====
+
+@mcp.tool()
+async def validate_md2pptx_format(file_path: str) -> str:
+    """
+    验证 Markdown 文件是否符合 MD2PPTX 格式要求
+    
+    Args:
+        file_path: 要验证的 Markdown 文件路径
+        
+    Returns:
+        验证结果和改进建议
+        
+    Use cases:
+        - 验证格式: validate_md2pptx_format("/path/to/presentation.md")
+    """
+    
+    try:
+        file_path_obj = Path(file_path)
+        
+        # 基本文件检查
+        if not file_path_obj.exists():
+            return f"❌ 文件不存在: {file_path}"
+        
+        # 读取文件内容
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except UnicodeDecodeError:
+            return f"❌ 文件编码错误，请使用 UTF-8 编码: {file_path}"
+        
+        lines = content.split('\n')
+        issues = []
+        suggestions = []
+        metadata_found = False
+        metadata_end_line = 0
+        
+        # 检查元数据头部
+        for i, line in enumerate(lines):
+            if line.strip() == '' and i > 0:
+                metadata_end_line = i
+                break
+            if ':' in line and not line.startswith('#'):
+                metadata_found = True
+                # 检查必需的元数据
+                if line.startswith('template:'):
+                    template_value = line.split(':', 1)[1].strip()
+                    if not template_value:
+                        issues.append("❌ template 元数据为空")
+                    elif not template_value.endswith('.pptx'):
+                        issues.append("❌ template 必须是 .pptx 文件")
+        
+        if not metadata_found:
+            issues.append("❌ 缺少元数据头部 - MD2PPTX 需要在文件开头定义元数据")
+            suggestions.append("💡 添加元数据头部，至少包含: template: Martin Template.pptx")
+        
+        # 检查标题层次结构
+        title_levels = []
+        has_presentation_title = False
+        has_section_title = False
+        has_content_slides = False
+        
+        for i, line in enumerate(lines[metadata_end_line:], metadata_end_line):
+            if line.startswith('#'):
+                level = len(line) - len(line.lstrip('#'))
+                title_levels.append((level, i + 1, line.strip()))
+                
+                if level == 1:
+                    has_presentation_title = True
+                elif level == 2:
+                    has_section_title = True
+                elif level == 3:
+                    has_content_slides = True
+                elif level > 4:
+                    issues.append(f"⚠️  第{i+1}行: 标题层次过深 (>{level}级)，MD2PPTX 建议最多4级")
+        
+        # 检查标题层次跳跃
+        for i in range(1, len(title_levels)):
+            prev_level, prev_line, prev_title = title_levels[i-1]
+            curr_level, curr_line, curr_title = title_levels[i]
+            
+            if curr_level > prev_level + 1:
+                issues.append(f"⚠️  第{curr_line}行: 标题层次跳跃 (从{prev_level}级跳到{curr_level}级)")
+        
+        # 检查演示结构
+        if not has_presentation_title:
+            issues.append("❌ 缺少演示标题页 (# 标题)")
+            suggestions.append("💡 添加演示标题页: # 您的演示标题")
+        
+        if not has_section_title and has_content_slides:
+            suggestions.append("💡 建议添加章节页 (## 标题) 来组织内容")
+        
+        if not has_content_slides:
+            issues.append("❌ 缺少内容幻灯片 (### 标题)")
+            suggestions.append("💡 添加内容幻灯片: ### 幻灯片标题")
+        
+        # 检查要点格式
+        bullet_issues = []
+        for i, line in enumerate(lines):
+            if line.strip().startswith('*') or line.strip().startswith('-'):
+                # 检查要点缩进
+                indent = len(line) - len(line.lstrip())
+                if indent % 4 != 0 and indent % 2 != 0:
+                    bullet_issues.append(f"第{i+1}行: 要点缩进不规范")
+        
+        if bullet_issues:
+            issues.extend(bullet_issues[:3])  # 只显示前3个
+            if len(bullet_issues) > 3:
+                issues.append(f"... 还有 {len(bullet_issues) - 3} 个要点格式问题")
+        
+        # 生成验证报告
+        if not issues and not suggestions:
+            return f"""✅ MD2PPTX 格式验证通过!
+
+📄 文件: {file_path}
+📊 统计:
+- 元数据: {'✅ 已定义' if metadata_found else '❌ 缺失'}
+- 演示标题页: {'✅ 有' if has_presentation_title else '❌ 无'}
+- 章节页: {'✅ 有' if has_section_title else '⚠️  无'}
+- 内容幻灯片: {'✅ 有' if has_content_slides else '❌ 无'}
+- 标题层次: ✅ 规范
+
+🎯 该文件符合 MD2PPTX 格式要求，可以直接转换！"""
+        
+        else:
+            report = f"""📋 MD2PPTX 格式验证报告
+
+📄 文件: {file_path}
+📊 统计:
+- 元数据: {'✅ 已定义' if metadata_found else '❌ 缺失'}
+- 演示标题页: {'✅ 有' if has_presentation_title else '❌ 无'}
+- 章节页: {'✅ 有' if has_section_title else '⚠️  无'}
+- 内容幻灯片: {'✅ 有' if has_content_slides else '❌ 无'}"""
+            
+            if issues:
+                report += f"\n\n❌ 发现的问题:"
+                for issue in issues:
+                    report += f"\n{issue}"
+            
+            if suggestions:
+                report += f"\n\n💡 改进建议:"
+                for suggestion in suggestions:
+                    report += f"\n{suggestion}"
+            
+            report += f"\n\n🔧 使用 quick_fix_md2pptx_format 工具可以自动修复部分问题"
+            
+            return report
+    
+    except Exception as e:
+        return f"❌ 验证过程出错: {str(e)}"
+
+@mcp.tool()
+async def quick_fix_md2pptx_format(file_path: str) -> str:
+    """
+    快速修复 MD2PPTX 格式问题
+    
+    Args:
+        file_path: 需要修复的 Markdown 文件路径
+        
+    Returns:
+        修复结果报告
+        
+    Use cases:
+        - 修复格式: quick_fix_md2pptx_format("/path/to/presentation.md")
+    """
+    
+    try:
+        file_path_obj = Path(file_path)
+        
+        if not file_path_obj.exists():
+            return f"❌ 文件不存在: {file_path}"
+        
+        # 读取原文件
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        lines = content.split('\n')
+        fixed_lines = []
+        fixes_applied = []
+        
+        # 检查是否有元数据
+        has_metadata = False
+        metadata_end = 0
+        
+        for i, line in enumerate(lines):
+            if line.strip() == '' and i > 0:
+                metadata_end = i
+                break
+            if ':' in line and not line.startswith('#'):
+                has_metadata = True
+        
+        # 如果没有元数据，添加默认元数据
+        if not has_metadata:
+            default_metadata = [
+                "template: Martin Template.pptx",
+                "pageTitleSize: 24",
+                "sectionTitleSize: 30",
+                "baseTextSize: 20",
+                "numbers: no",
+                "style.fgcolor.blue: 0000FF",
+                "style.fgcolor.red: FF0000",
+                "style.fgcolor.green: 00FF00",
+                ""
+            ]
+            fixed_lines.extend(default_metadata)
+            fixes_applied.append("✅ 添加了默认元数据头部")
+        
+        # 处理原有内容
+        in_metadata = True
+        for i, line in enumerate(lines):
+            if in_metadata and line.strip() == '':
+                in_metadata = False
+                if has_metadata:
+                    fixed_lines.append(line)
+                continue
+            
+            if in_metadata and has_metadata:
+                fixed_lines.append(line)
+                continue
+            
+            # 修复标题格式
+            if line.startswith('#'):
+                # 确保标题后有空格
+                level = len(line) - len(line.lstrip('#'))
+                title_text = line.lstrip('#').strip()
+                if title_text:
+                    fixed_line = '#' * level + ' ' + title_text
+                    if fixed_line != line:
+                        fixes_applied.append(f"✅ 修复标题格式: 第{i+1}行")
+                    fixed_lines.append(fixed_line)
+                else:
+                    fixed_lines.append(line)
+            else:
+                fixed_lines.append(line)
+        
+        # 检查是否需要添加基本结构
+        has_title = any(line.startswith('# ') for line in fixed_lines)
+        has_content = any(line.startswith('### ') for line in fixed_lines)
+        
+        if not has_title:
+            # 在元数据后添加标题页
+            insert_pos = 0
+            for i, line in enumerate(fixed_lines):
+                if line.strip() == '' and i > 5:  # 跳过元数据部分
+                    insert_pos = i + 1
+                    break
+            
+            fixed_lines.insert(insert_pos, "# 演示标题")
+            fixed_lines.insert(insert_pos + 1, "副标题或演讲者信息")
+            fixed_lines.insert(insert_pos + 2, "")
+            fixes_applied.append("✅ 添加了演示标题页")
+        
+        if not has_content:
+            # 添加示例内容
+            fixed_lines.extend([
+                "## 第一章节",
+                "",
+                "### 示例内容页",
+                "* 要点一",
+                "* 要点二", 
+                "* 要点三",
+                ""
+            ])
+            fixes_applied.append("✅ 添加了示例内容结构")
+        
+        # 写入修复后的文件
+        backup_path = file_path_obj.with_suffix('.md.backup')
+        
+        # 创建备份
+        with open(backup_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        # 写入修复后的内容
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(fixed_lines))
+        
+        if fixes_applied:
+            report = f"""✅ MD2PPTX 格式修复完成!
+
+📄 文件: {file_path}
+💾 备份: {backup_path}
+
+🔧 应用的修复:"""
+            for fix in fixes_applied:
+                report += f"\n{fix}"
+            
+            report += f"\n\n🎯 文件已修复，现在可以使用 convert_markdown 转换为 PPTX!"
+            
+            return report
+        else:
+            return f"""✅ 文件格式良好
+
+📄 文件: {file_path}
+🎯 该文件已符合 MD2PPTX 格式要求，无需修复"""
+    
+    except Exception as e:
+        return f"❌ 修复过程出错: {str(e)}"
+
+@mcp.tool()
+async def create_md2pptx_content(
+    topic: str,
+    presentation_type: str = "technical",
+    target_audience: str = "team",
+    slide_count: str = "medium"
+) -> str:
+    """
+    智能创建符合 MD2PPTX 格式的演示内容
+    
+    Args:
+        topic: 演示主题
+        presentation_type: 演示类型 (technical/business/training/product)
+        target_audience: 目标受众 (team/management/customers/investors)
+        slide_count: 幻灯片数量 (short/medium/long)
+        
+    Returns:
+        符合 MD2PPTX 格式的完整 Markdown 内容
+        
+    Use cases:
+        - 技术演示: create_md2pptx_content("AI项目架构", "technical", "team")
+        - 商务演示: create_md2pptx_content("季度业绩", "business", "management")
+        - 产品演示: create_md2pptx_content("新产品发布", "product", "customers")
+    """
+    
+    try:
+        # 根据演示类型确定设置
+        type_configs = {
+            "technical": {
+                "pageTitleSize": 22,
+                "sectionTitleSize": 28,
+                "baseTextSize": 18,
+                "focus": "技术架构、实现细节、代码示例",
+                "tone": "精确、详细、实用性强"
+            },
+            "business": {
+                "pageTitleSize": 24,
+                "sectionTitleSize": 30,
+                "baseTextSize": 20,
+                "focus": "数据驱动、结果导向、ROI分析",
+                "tone": "专业、简洁、有说服力"
+            },
+            "training": {
+                "pageTitleSize": 26,
+                "sectionTitleSize": 32,
+                "baseTextSize": 22,
+                "focus": "学习目标、步骤指导、实践练习",
+                "tone": "清晰、循序渐进、互动性强"
+            },
+            "product": {
+                "pageTitleSize": 25,
+                "sectionTitleSize": 31,
+                "baseTextSize": 21,
+                "focus": "功能特性、用户价值、竞争优势",
+                "tone": "吸引人、易理解、突出价值"
+            }
+        }
+        
+        # 根据幻灯片数量确定结构
+        count_configs = {
+            "short": {"slides": "5-8", "sections": 2, "content_per_section": 2},
+            "medium": {"slides": "10-15", "sections": 3, "content_per_section": 3},
+            "long": {"slides": "20-30", "sections": 4, "content_per_section": 4}
+        }
+        
+        config = type_configs.get(presentation_type, type_configs["technical"])
+        structure = count_configs.get(slide_count, count_configs["medium"])
+        
+        # 生成元数据头部
+        metadata = f"""template: Martin Template.pptx
+pageTitleSize: {config['pageTitleSize']}
+sectionTitleSize: {config['sectionTitleSize']}
+baseTextSize: {config['baseTextSize']}
+numbers: no
+style.fgcolor.blue: 0000FF
+style.fgcolor.red: FF0000
+style.fgcolor.green: 00FF00"""
+        
+        # 生成演示标题
+        title_section = f"""
+# {topic}
+{target_audience.title()} 专题演示"""
+        
+        # 根据主题和类型生成内容
+        if "AI" in topic or "人工智能" in topic or "机器学习" in topic:
+            content_sections = """
+
+## 项目概述
+
+### 背景与机遇
+* AI技术快速发展，应用场景不断扩大
+* 行业数字化转型需求迫切
+* 数据资源丰富，具备AI应用基础
+* 技术团队具备相关经验和能力
+
+### 项目目标
+* 提升业务效率 50% 以上
+* 降低运营成本 30%
+* 增强客户体验满意度
+* 构建智能化竞争优势
+
+## 技术方案
+
+### 核心架构
+* **数据层**: 数据采集、清洗、特征工程
+* **算法层**: 机器学习模型、深度学习框架
+* **应用层**: 智能决策支持、自动化流程
+* **接口层**: API服务、用户交互界面
+
+### 关键技术
+* 大语言模型 (LLM) 应用
+* 计算机视觉处理
+* 自然语言处理 (NLP)
+* 实时数据分析
+
+## 实施计划
+
+### 阶段规划
+|阶段|时间|关键任务|里程碑|
+|:---|:---|:---|:---|
+|第一阶段|1-3月|基础设施建设|平台搭建完成|
+|第二阶段|4-6月|核心算法开发|模型训练完成|
+|第三阶段|7-9月|系统集成测试|功能验证通过|
+|第四阶段|10-12月|上线部署优化|正式投产运行|
+
+### 风险控制
+* 技术风险: 建立专家团队，制定备选方案
+* 数据风险: 确保数据质量，建立安全机制
+* 进度风险: 采用敏捷开发，定期评估调整"""
+        
+        elif "项目" in topic or "project" in topic.lower():
+            content_sections = """
+
+## 项目背景
+
+### 项目驱动因素
+* 市场需求变化，需要快速响应
+* 现有系统功能限制，影响业务发展
+* 竞争对手技术升级，需要保持优势
+* 内部流程优化需求，提升效率
+
+### 项目价值
+* 提升业务处理能力
+* 改善用户体验
+* 降低运营成本
+* 增强市场竞争力
+
+## 解决方案
+
+### 方案概述
+* 采用现代化技术架构
+* 模块化设计，便于扩展
+* 注重用户体验设计
+* 确保系统安全可靠
+
+### 技术选型
+* **前端**: React/Vue.js 现代化界面
+* **后端**: Node.js/Python 高性能服务
+* **数据库**: PostgreSQL/MongoDB 数据存储
+* **部署**: Docker/Kubernetes 容器化部署
+
+## 项目管理
+
+### 团队组织
+* 项目经理: 1名 (整体协调)
+* 技术负责人: 1名 (架构设计)
+* 开发工程师: 4名 (功能实现)
+* 测试工程师: 2名 (质量保证)
+
+### 进度安排
+* **需求分析**: 2周
+* **系统设计**: 3周  
+* **开发实现**: 8周
+* **测试部署**: 2周
+* **上线运维**: 1周"""
+        
+        elif "产品" in topic or "product" in topic.lower():
+            content_sections = """
+
+## 产品概述
+
+### 市场分析
+* 目标市场规模和增长趋势
+* 用户需求痛点分析
+* 竞争对手产品对比
+* 市场机会窗口
+
+### 产品定位
+* 核心价值主张
+* 目标用户群体
+* 产品差异化优势
+* 市场定位策略
+
+## 产品特性
+
+### 核心功能
+* **功能一**: 解决用户核心需求
+* **功能二**: 提升使用体验
+* **功能三**: 增强产品价值
+* **功能四**: 扩展应用场景
+
+### 技术优势
+* 先进的技术架构
+* 优秀的性能表现
+* 良好的扩展性
+* 完善的安全保障
+
+## 商业模式
+
+### 盈利模式
+* 订阅服务收费
+* 增值功能付费
+* 企业定制服务
+* 合作伙伴分成
+
+### 市场策略
+* 产品推广计划
+* 渠道合作策略
+* 用户获取方案
+* 品牌建设规划"""
+        
+        else:
+            content_sections = """
+
+## 概述
+
+### 背景介绍
+* 当前市场环境分析
+* 行业发展趋势
+* 面临的机遇与挑战
+* 项目启动的必要性
+
+### 目标设定
+* 核心目标明确
+* 关键指标量化
+* 成功标准定义
+* 预期效果评估
+
+## 方案详情
+
+### 解决方案
+* 核心理念阐述
+* 主要组成部分
+* 技术路线选择
+* 创新点突出
+
+### 实施策略
+* 分阶段实施计划
+* 资源配置方案
+* 风险控制措施
+* 质量保证体系
+
+## 预期成果
+
+### 效益分析
+|类型|当前状态|目标状态|提升幅度|
+|:---|:---|:---|:---|
+|效率|基准值|目标值|+XX%|
+|成本|当前成本|目标成本|-XX%|
+|质量|现有水平|期望水平|+XX%|
+
+### 成功保障
+* 专业团队支持
+* 充足资源投入
+* 完善监控体系
+* 持续优化改进"""
+        
+        # 组合完整内容
+        full_content = metadata + title_section + content_sections
+        
+        return f"""✅ MD2PPTX 内容已生成!
+
+📋 生成参数:
+- 主题: {topic}
+- 类型: {presentation_type}
+- 受众: {target_audience}
+- 规模: {structure['slides']} 张幻灯片
+
+📝 生成的 Markdown 内容:
+
+```markdown
+{full_content}
+```
+
+🎯 使用方法:
+1. 复制上面的 Markdown 内容
+2. 保存为 .md 文件 (如: {topic.replace(' ', '_')}.md)
+3. 使用 convert_markdown 工具转换: convert_markdown("文件路径", "pptx")
+
+✅ 该内容完全符合 MD2PPTX 格式要求，可以直接转换！"""
+    
+    except Exception as e:
+        return f"❌ 内容生成失败: {str(e)}"
+
+@mcp.tool()
+async def show_md2pptx_examples() -> str:
+    """
+    显示 MD2PPTX 格式示例
+    
+    Returns:
+        标准格式示例和说明
+        
+    Use cases:
+        - 查看示例: show_md2pptx_examples()
+    """
+    
+    return """# 📊 MD2PPTX 格式示例和说明
+
+## 🎯 核心格式要求
+
+### 1. 必需的元数据头部
+每个 MD2PPTX 文件**必须**以元数据开头（在第一个空行之前）：
+
+```markdown
+template: Martin Template.pptx
+pageTitleSize: 24
+sectionTitleSize: 30
+baseTextSize: 20
+numbers: no
+style.fgcolor.blue: 0000FF
+style.fgcolor.red: FF0000
+style.fgcolor.green: 00FF00
+```
+
+### 2. 标题层次结构
+MD2PPTX 使用特定的标题层次创建不同类型的幻灯片：
+
+- `# 标题` → **演示标题页** (封面)
+- `## 标题` → **章节分隔页** (Section Slide)  
+- `### 标题` → **内容幻灯片** (Content Slide)
+- `#### 标题` → **卡片标题** (Card Title)
+
+## 📝 完整示例
+
+```markdown
+template: Martin Template.pptx
+pageTitleSize: 24
+sectionTitleSize: 30
+baseTextSize: 20
+numbers: no
+style.fgcolor.blue: 0000FF
+style.fgcolor.red: FF0000
+style.fgcolor.green: 00FF00
+
+# AI项目提案
+智能化转型的战略机遇
+
+## 项目背景
+
+### 市场机遇分析
+* AI技术快速发展，应用场景不断扩大
+* 行业数字化转型需求迫切
+* 竞争对手AI布局相对滞后
+* 政策环境支持AI创新发展
+
+### 技术架构设计
+<!-- md2pptx: cardlayout: horizontal -->
+
+#### 数据层
+* 数据采集与清洗
+* 特征工程优化
+* 数据安全保障
+
+#### 算法层
+* 机器学习模型
+* 深度学习框架
+* 模型训练与优化
+
+## 投资回报
+
+### 成本效益分析
+|项目|投资|收益|回收期|
+|:---|--:|--:|:---|
+|AI平台|500万|800万|9个月|
+|数据中台|300万|600万|6个月|
+|算法优化|200万|400万|8个月|
+
+### 总结与建议
+* 项目技术方案先进可行
+* 市场前景广阔明确
+* 投资回报预期良好
+* 建议立即启动实施
+```
+
+## 🎨 高级功能
+
+### 卡片布局
+```markdown
+### 功能对比
+<!-- md2pptx: cardlayout: horizontal -->
+<!-- md2pptx: cardcolour: BACKGROUND 2 -->
+
+#### 传统方案
+* 手工处理
+* 效率低下
+* 错误率高
+
+#### AI方案  
+* 自动化处理
+* 效率提升50%
+* 准确率99%+
+```
+
+### 表格数据
+```markdown
+### 性能对比
+|指标|当前|目标|提升|
+|:---|--:|--:|--:|
+|处理速度|100/h|500/h|400%|
+|准确率|85%|99%|14%|
+|成本|$1000|$600|40%|
+```
+
+## ⚠️ 重要约束
+
+### ✅ 必须遵循
+1. **元数据头部**: 必须在文件开头，第一个空行之前
+2. **标题层次**: 严格按照 #/##/###/#### 的层次结构
+3. **模板引用**: 必须指定 `template: Martin Template.pptx`
+
+### ❌ 避免问题
+1. **跳级标题**: 不要从 # 直接跳到 ###
+2. **空标题**: 每个标题都应该有内容
+3. **过长内容**: 每页要点不超过 7 个
+
+## 🚀 使用流程
+
+1. **创建内容**: 使用 `create_md2pptx_content` 生成标准格式
+2. **验证格式**: 使用 `validate_md2pptx_format` 检查格式
+3. **修复问题**: 使用 `quick_fix_md2pptx_format` 自动修复
+4. **转换PPTX**: 使用 `convert_markdown` 转换为演示文稿
+
+**🎯 遵循这些格式要求，确保完美的 PPTX 转换效果！**"""
+
+@mcp.tool()
+async def get_md2pptx_format_guide() -> str:
+    """
+    获取 MD2PPTX 格式规范指南
+    
+    Returns:
+        详细的格式规范说明，帮助AI理解正确的Markdown格式
+        
+    Use cases:
+        - 获取格式指南: get_md2pptx_format_guide()
+    """
+    
+    return """# 📋 MD2PPTX 格式规范指南
+
+## 🎯 核心设计原理
+
+MD2PPTX 是一个将 Markdown 转换为 PowerPoint 演示文稿的工具，它有特定的格式要求：
+
+### 1. 元数据驱动
+- 所有样式和配置通过文件头部的元数据控制
+- 元数据必须在第一个空行之前
+- 支持字体大小、颜色、模板等配置
+
+### 2. 层次化结构
+- 使用 Markdown 标题层次映射到不同的幻灯片类型
+- 每个层次有特定的用途和样式
+
+### 3. 内容优化
+- 针对演示文稿优化，支持要点、表格、卡片等
+- 自动处理布局和格式
+
+## 📝 必需元数据字段
+
+```markdown
+template: Martin Template.pptx    # 必需：PPTX模板文件
+pageTitleSize: 24                # 页面标题字体大小
+sectionTitleSize: 30             # 章节标题字体大小  
+baseTextSize: 20                 # 基础文本字体大小
+numbers: no                      # 是否显示页码
+style.fgcolor.blue: 0000FF       # 蓝色定义
+style.fgcolor.red: FF0000        # 红色定义
+style.fgcolor.green: 00FF00      # 绿色定义
+```
+
+## 🏗️ 标题层次映射
+
+| Markdown | 幻灯片类型 | 用途 | 样式特点 |
+|----------|------------|------|----------|
+| `# 标题` | 演示标题页 | 封面页 | 大标题，居中显示 |
+| `## 标题` | 章节分隔页 | 章节开始 | 中等标题，分隔内容 |
+| `### 标题` | 内容幻灯片 | 主要内容 | 标准内容页面 |
+| `#### 标题` | 卡片标题 | 卡片内容 | 小标题，用于卡片 |
+
+## 📊 内容类型支持
+
+### 要点列表
+```markdown
+### 功能特性
+* 主要功能一
+  * 子功能 1.1
+  * 子功能 1.2
+* 主要功能二
+* 主要功能三
+```
+
+### 表格数据
+```markdown
+### 性能对比
+|指标|当前值|目标值|提升|
+|:---|---:|---:|---:|
+|速度|100|200|100%|
+|准确率|90%|99%|9%|
+```
+
+### 卡片布局
+```markdown
+### 方案对比
+<!-- md2pptx: cardlayout: horizontal -->
+
+#### 方案A
+* 优点一
+* 优点二
+
+#### 方案B  
+* 优点一
+* 优点二
+```
+
+## 🎨 高级功能
+
+### HTML注释控制
+- `<!-- md2pptx: cardlayout: horizontal -->` - 水平卡片布局
+- `<!-- md2pptx: cardlayout: vertical -->` - 垂直卡片布局
+- `<!-- md2pptx: cardcolour: BACKGROUND 2 -->` - 卡片背景色
+
+### 颜色标记
+```markdown
+这是 <span class="blue">蓝色文本</span>
+这是 <span class="red">红色文本</span>
+这是 <span class="green">绿色文本</span>
+```
+
+### 代码块
+```markdown
+### 代码示例
+```python
+def hello_world():
+    print("Hello, World!")
+```
+```
+
+## ⚠️ 格式约束
+
+### ✅ 正确做法
+1. 元数据在文件开头，空行之前
+2. 标题层次递进，不跳级
+3. 每页内容适量（3-7个要点）
+4. 使用标准的 Markdown 语法
+
+### ❌ 错误做法
+1. 缺少元数据头部
+2. 标题层次跳跃（如从#直接到###）
+3. 内容过多导致页面拥挤
+4. 使用不支持的 Markdown 扩展
+
+## 🔧 质量检查清单
+
+- [ ] 包含完整的元数据头部
+- [ ] 指定了正确的模板文件
+- [ ] 标题层次结构正确
+- [ ] 每页内容数量适中
+- [ ] 表格格式规范
+- [ ] 特殊功能语法正确
+
+## 💡 最佳实践
+
+### 内容组织
+1. **演示标题页**: 简洁有力的主标题和副标题
+2. **章节页**: 用于内容分组和过渡
+3. **内容页**: 每页聚焦一个主题，3-6个要点
+4. **总结页**: 重点回顾和行动建议
+
+### 视觉设计
+1. 保持一致的字体大小设置
+2. 合理使用颜色标记重点
+3. 表格数据右对齐数字
+4. 卡片布局突出对比
+
+### 内容质量
+1. 标题简洁明确
+2. 要点表达清晰
+3. 数据准确可信
+4. 逻辑结构清晰
+
+**🎯 遵循这些规范，确保生成高质量的 PowerPoint 演示文稿！**"""
+
 # ===== 服务器启动 =====
 
 def main():
     """主函数"""
-    print("🚀 统一转换 MCP Server 已启动")
+    print("🚀 MD2DOCX MCP Server (改进版) 已启动")
     print("📋 可用工具:")
     print("  🔄 统一转换工具:")
     print("    - convert_markdown: 统一转换 (DOCX/PPTX/Both)")
     print("    - batch_convert_markdown: 批量多格式转换")
     print("    - convert_with_template: 模板转换")
+    print("  📊 MD2PPTX 专用工具:")
+    print("    - validate_md2pptx_format: 验证MD2PPTX格式")
+    print("    - quick_fix_md2pptx_format: 快速修复格式问题")
+    print("    - create_md2pptx_content: 智能生成PPTX内容")
+    print("    - show_md2pptx_examples: 显示格式示例")
+    print("    - get_md2pptx_format_guide: 获取格式规范指南")
     print("  ⚙️  配置管理工具:")
     print("    - quick_config_default_format: 设置默认格式")
     print("    - quick_config_pptx_template: 设置PPTX模板")
     print("    - get_conversion_status: 状态检查")
-    print("  📊 PPTX 专用工具:")
-    print("    - get_md2pptx_format_guide: md2pptx格式指导")
     print("  🔄 向后兼容工具:")
     print("    - convert_md_to_docx: 单独DOCX转换")
     print("    - batch_convert_md_to_docx: 批量DOCX转换")
     print("  📁 文件管理工具:")
     print("    - list_markdown_files: 列出文件")
     print("    - validate_markdown_file: 验证文件")
-    print("  🎯 智能助手:")
-    print("    - md2docx_conversion_guide: 转换指导")
-    print("    - md2docx_troubleshooting_guide: 故障排除")
-    print("    - md2pptx_content_generator: PPTX内容生成指导")
-    print("✅ 服务器准备就绪 - 支持 DOCX 和 PPTX 转换")
+    print("✅ 改进版服务器准备就绪 - 支持 DOCX 和 PPTX 转换")
+    print("💡 新增特性: MD2PPTX 格式验证、内容生成和智能修复")
+    print("🎯 MD2PPTX 特殊格式要求已完全支持！")
 
 if __name__ == "__main__":
     main()

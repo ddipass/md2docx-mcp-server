@@ -17,6 +17,16 @@
 - 🛡️ **错误处理** - 智能的错误恢复和重试机制
 - 📦 **开箱即用** - 内置所有依赖，无需额外安装
 
+## 📚 文档
+
+详细的文档和指南请查看 [`docs/`](docs/) 目录：
+
+- 🚀 [MCP 安装指南](docs/guides/MCP_INSTALLATION_GUIDE.md) - 快速安装和配置
+- 📊 [PPTX 模板指南](docs/guides/PPTX_TEMPLATE_GUIDE.md) - MD2PPTX 格式要求
+- 🚀 [部署指南](docs/guides/DEPLOYMENT_GUIDE.md) - 详细部署说明
+- 🏗️ [集成设计方案](docs/design/MD2PPTX_INTEGRATION_DESIGN.md) - 架构设计文档
+- 📝 [示例文件](docs/examples/) - MD2PPTX 格式示例
+
 ## 🚀 快速开始
 
 ### 方法1：一键安装（推荐）

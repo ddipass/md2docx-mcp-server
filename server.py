@@ -1098,7 +1098,8 @@ async def convert_md_to_latex(
 - ✅ 支持无限级别标题
 - ✅ 改进的表格处理
 - ✅ 更好的中文支持
-- ✅ 代码高亮支持
+- ✅ 智能代码高亮（自动语言映射）
+- ✅ 支持 JavaScript, TypeScript, Go, Rust 等现代语言
 
 💡 下一步: 使用 compile_latex_to_pdf 编译为 PDF"""
     
@@ -1366,8 +1367,13 @@ async def update_md2latex_upstream() -> str:
 - ✅ 支持无限级别标题
 - ✅ 改进的表格处理
 - ✅ 更好的中文支持
-- ✅ 代码高亮支持
+- ✅ 智能代码高亮支持（支持 30+ 编程语言）
 - ✅ 多种配置和模板
+- ✅ 自动语言映射（JavaScript→Java, TypeScript→Java, Go→C 等）
+
+🎯 支持的编程语言:
+Python, Java, C, C++, JavaScript, TypeScript, HTML, CSS, PHP, Ruby, Go, Rust, 
+Kotlin, Swift, YAML, JSON, Bash, PowerShell, Dockerfile 等
 
 如需更新功能，请手动修改 md2latex/ 目录下的代码。"""
     

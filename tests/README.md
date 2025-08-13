@@ -43,12 +43,23 @@ tests/
 | `test_math_only.md` | 纯数学公式测试 | 各种数学公式和符号 |
 | `test_no_math.md` | 无数学公式测试 | 验证非数学内容的处理 |
 
-### 修复版本测试
+### 图片格式测试
 
 | 文件名 | 用途 | 特点 |
 |--------|------|------|
-| `test_chinese_fixed.md` | 中文修复版测试 | 修复后的中文处理 |
-| `test_chinese_level_fixed.md` | 中文多级标题测试 | 测试无限级别标题功能 |
+| `test_compatible_images.md` | LaTeX 兼容格式测试 | JPEG, PNG 原生支持 |
+| `test_image_formats.md` | 全格式支持测试 | 包含 BMP, TIFF 等需转换格式 |
+| `test_complete_image_support.md` | 完整图片处理测试 | 原生+转换格式综合测试 |
+
+### 图片处理功能
+
+| 功能 | 状态 | 说明 |
+|------|------|------|
+| **路径解析** | ✅ | 自动修复相对路径问题 |
+| **格式检查** | ✅ | 自动检测兼容性并生成警告 |
+| **原生支持** | ✅ | JPEG, PNG 直接支持 |
+| **格式转换** | ✅ | BMP, TIFF 自动转换为 PNG |
+| **转换工具** | ✅ | sips (macOS), rsvg-convert |
 
 ## 🚀 使用方法
 

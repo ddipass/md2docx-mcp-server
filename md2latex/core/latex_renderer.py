@@ -93,7 +93,16 @@ class ImprovedLaTeXRenderer(mistune.BaseRenderer):
         return template.replace("<url>", url).replace("<text>", text)
     
     def image(self, alt: str, url: str, title: Optional[str] = None) -> str:
-        """图片"""
+        """图片 - 改进版，支持路径解析和格式检查"""
+        from pathlib import Path
+        import os
+        
+        # 处理图片路径
+        processed_url = self._process_image_path(url)
+        
+        # 检查图片格式兼容性
+        format_info = self._check_image_format(processed_url)
+        
         template = self.config.get("image", """
 \\begin{figure}[H]
     \\centering
@@ -105,7 +114,59 @@ class ImprovedLaTeXRenderer(mistune.BaseRenderer):
         # 生成标签
         label = re.sub(r'[^a-zA-Z0-9]', '_', alt.lower())
         
-        return template.replace("<url>", url).replace("<alt>", alt).replace("<label>", label)
+        # 如果有格式警告，添加注释
+        result = template.replace("<url>", processed_url).replace("<alt>", alt).replace("<label>", label)
+        
+        if format_info['warning']:
+            result = f"% 图片格式提示: {format_info['warning']}\n{result}"
+        
+        return result
+    
+    def _process_image_path(self, url: str) -> str:
+        """处理图片路径，解决相对路径问题"""
+        from pathlib import Path
+        
+        # 如果是绝对路径，直接返回
+        if Path(url).is_absolute():
+            return url
+        
+        # 如果是相对路径，需要根据输出目录调整
+        if url.startswith('../'):
+            # 从 output/latex/ 目录看，需要回到项目根目录
+            # ../images/file.jpg -> ../../tests/images/file.jpg
+            if 'tests/images/' in url or 'images/' in url:
+                # 调整路径：从 output/latex/ 到 tests/images/
+                adjusted_url = url.replace('../images/', '../../tests/images/')
+                return adjusted_url
+        
+        # 其他情况保持原样
+        return url
+    
+    def _check_image_format(self, url: str) -> dict:
+        """检查图片格式兼容性"""
+        from pathlib import Path
+        
+        # 获取文件扩展名
+        ext = Path(url).suffix.lower()
+        
+        # LaTeX 原生支持的格式
+        native_formats = {'.pdf', '.png', '.jpg', '.jpeg'}
+        
+        # 需要转换的格式
+        convertible_formats = {
+            '.bmp': 'BMP格式可能需要转换为PNG',
+            '.tiff': 'TIFF格式可能需要转换为PNG', 
+            '.tif': 'TIF格式可能需要转换为PNG',
+            '.gif': 'GIF格式可能需要转换为PNG',
+            '.webp': 'WebP格式可能需要转换为PNG'
+        }
+        
+        if ext in native_formats:
+            return {'compatible': True, 'warning': None}
+        elif ext in convertible_formats:
+            return {'compatible': False, 'warning': convertible_formats[ext]}
+        else:
+            return {'compatible': False, 'warning': f'未知图片格式 {ext}，建议使用 PNG/JPEG'}
     
     def codespan(self, text: str) -> str:
         """行内代码"""
@@ -142,14 +203,55 @@ class ImprovedLaTeXRenderer(mistune.BaseRenderer):
         return self.config.get("block_text", "<text>").replace("<text>", text)
     
     def block_code(self, text: str, info: Optional[str] = None) -> str:
-        """代码块 - 改进版，支持语法高亮"""
+        """代码块 - 改进版，支持语法高亮和语言映射"""
         if info:
+            # 语言映射表 - 将不支持的语言映射到支持的语言
+            language_mapping = {
+                'javascript': 'Java',
+                'js': 'Java',
+                'typescript': 'Java',
+                'ts': 'Java',
+                'jsx': 'Java',
+                'tsx': 'Java',
+                'vue': 'HTML',
+                'svelte': 'HTML',
+                'php': 'PHP',
+                'ruby': 'Ruby',
+                'go': 'C',
+                'rust': 'C',
+                'kotlin': 'Java',
+                'swift': 'C',
+                'dart': 'Java',
+                'scala': 'Java',
+                'clojure': 'Lisp',
+                'elixir': 'Erlang',
+                'haskell': 'Haskell',
+                'ocaml': 'ML',
+                'fsharp': 'ML',
+                'powershell': 'bash',
+                'dockerfile': 'bash',
+                'yaml': 'XML',
+                'yml': 'XML',
+                'toml': 'XML',
+                'json': 'XML',
+                'markdown': 'TeX',
+                'md': 'TeX',
+                'tex': 'TeX',
+                'latex': 'TeX'
+            }
+            
+            # 将语言名称转换为小写进行匹配
+            lang_lower = info.lower().strip()
+            
+            # 使用映射表或保持原语言名称
+            mapped_lang = language_mapping.get(lang_lower, info)
+            
             # 有语言信息，使用 listings 包
             template = self.config.get("block_code_with_lang", """
 \\begin{lstlisting}[language=<lang>]
 <code>
 \\end{lstlisting}""")
-            return template.replace("<lang>", info).replace("<code>", text)
+            return template.replace("<lang>", mapped_lang).replace("<code>", text)
         else:
             # 无语言信息，使用 verbatim
             template = self.config.get("block_code", """

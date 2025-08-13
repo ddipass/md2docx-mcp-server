@@ -1,0 +1,81 @@
+# 中文优化配置
+# 基于 VMIJUNV/md-to-latex 的配置格式
+
+text: |-
+  <text>
+emphasis: |-
+  \emph{<text>}
+strong: |-
+  \textbf{<text>}
+link: |-
+  \href{<url>}{<text>}
+image: |-
+  \begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{<url>}
+    \caption{<title>}
+    \label{fig:<title>}
+  \end{figure}
+codespan: |-
+  \texttt{<text>}
+linebreak: |-
+  \\
+softbreak: |-
+  
+inline_html: |-
+  <text>
+paragraph: |-
+  
+  <text>
+  
+heading: |-
+  \<heading_types>{<text>}
+blank_line: |-
+  
+thematic_break: |-
+  \noindent\rule{\textwidth}{1pt}
+block_text: |-
+  <text>
+block_code: |-
+  \begin{lstlisting}
+  <code>
+  \end{lstlisting}
+block_quote: |-
+  \begin{quote}
+    <text>
+  \end{quote}
+block_html: |-
+  <html>
+ordered_list: |-
+  \begin{enumerate}
+    <text>
+  \end{enumerate}
+disordered_list: |-
+  \begin{itemize}
+    <text>
+  \end{itemize}
+list_item: |-
+  \item <text>
+block_math: |-
+  \begin{equation}
+    <text>
+  \end{equation}
+inline_math: |-
+  $<text>$
+table: |-
+  \begin{table}[H]
+    \centering
+    \caption{表格}
+    \begin{tabular}{<align>}
+      \toprule
+      <head>
+      \midrule
+      <body>
+      \bottomrule
+    \end{tabular}
+    \label{tab:table}
+  \end{table}
+
+# 中文特殊设置
+chinese_punctuation: true
+chinese_spacing: true

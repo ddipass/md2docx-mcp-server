@@ -1,0 +1,51 @@
+\documentclass[UTF8, a4paper, 12pt, openany]{ctexbook}
+
+% 基于 Open_Data_Book 项目的导言区设置
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{tcolorbox}
+\usepackage{tabularx}
+\usepackage{makeidx}
+\usepackage{url}
+
+% 代码块设置
+\lstset{
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{green!60!black},
+  stringstyle=\color{red},
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=5pt
+}
+
+% 创建索引
+\makeindex
+
+\title{文档标题}
+\author{作者}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\frontmatter
+\tableofcontents
+
+\mainmatter
+
+<!-- Insert -->
+
+\backmatter
+\printindex
+
+\end{document}

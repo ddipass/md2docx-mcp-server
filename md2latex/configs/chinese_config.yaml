@@ -1,0 +1,57 @@
+# 中文优化配置
+# 基于 default_config.yaml，针对中文文档进行优化
+
+# 继承默认配置，只覆盖需要修改的部分
+
+# === 中文标题优化 ===
+heading: |
+  
+  \<heading_type>{<text>}
+
+# === 中文代码块优化 ===
+block_code_with_lang: |
+  
+  \begin{lstlisting}[
+      language=<lang>,
+      basicstyle=\ttfamily\small,
+      breaklines=true,
+      showstringspaces=false,
+      commentstyle=\color{gray},
+      keywordstyle=\color{blue},
+      stringstyle=\color{red},
+      frame=single,
+      numbers=left,
+      numberstyle=\tiny\color{gray}
+  ]
+  <code>
+  \end{lstlisting}
+
+# === 中文表格优化 ===
+table: |
+  
+  \begin{table}[H]
+      \centering
+      \caption{<counter>}
+      \label{tab:table<counter>}
+      \begin{tabular}{<alignment>}
+          \toprule
+          <header>
+          \midrule
+          <body>
+          \bottomrule
+      \end{tabular}
+  \end{table}
+
+# === 中文引用优化 ===
+block_quote: |
+  
+  \begin{quote}
+  \kaishu <text>
+  \end{quote}
+
+# === 中文数学公式优化 ===
+block_math: |
+  
+  \begin{equation}
+  <text>
+  \end{equation}

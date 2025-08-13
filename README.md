@@ -4,11 +4,11 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-green.svg)](https://modelcontextprotocol.io/)
 
-一个基于 Model Context Protocol (MCP) 的统一文档转换服务器，支持 Markdown 到 DOCX 和 PPTX 格式的转换。
+一个基于 Model Context Protocol (MCP) 的统一文档转换服务器，支持 Markdown 到 DOCX、PPTX 和 LaTeX/PDF 格式的转换。
 
 ## ✨ 特性
 
-- 🔄 **统一转换** - 支持 Markdown 转换为 DOCX 和 PPTX 格式
+- 🔄 **统一转换** - 支持 Markdown 转换为 DOCX、PPTX 和 LaTeX/PDF 格式
 - 📦 **批量处理** - 批量转换目录中的多个文件，支持多种输出格式
 - 🎨 **模板支持** - 内置专业模板，支持自定义模板
 - ⚙️ **智能配置** - 格式特定的配置选项和参数
@@ -16,6 +16,8 @@
 - 📊 **详细日志** - 完整的转换过程记录和统计
 - 🛡️ **错误处理** - 智能的错误恢复和重试机制
 - 📦 **开箱即用** - 内置所有依赖，无需额外安装
+- 🎯 **表格优化** - 改进的表格渲染，支持复杂表格结构
+- 🌏 **中文支持** - 优化的中文字体和排版处理
 
 ## 📚 文档
 
@@ -24,8 +26,10 @@
 - 🚀 [MCP 安装指南](docs/guides/MCP_INSTALLATION_GUIDE.md) - 快速安装和配置
 - 📊 [PPTX 模板指南](docs/guides/PPTX_TEMPLATE_GUIDE.md) - MD2PPTX 格式要求
 - 🚀 [部署指南](docs/guides/DEPLOYMENT_GUIDE.md) - 详细部署说明
-- 🏗️ [集成设计方案](docs/design/MD2PPTX_INTEGRATION_DESIGN.md) - 架构设计文档
-- 📝 [示例文件](docs/examples/) - MD2PPTX 格式示例
+- 🏗️ [PPTX 集成设计](docs/design/MD2PPTX_INTEGRATION_DESIGN.md) - PPTX 架构设计文档
+- 🔧 [LaTeX 集成设计](docs/design/MD2LATEX_INTEGRATION_DESIGN.md) - LaTeX 架构设计文档
+- 📝 [示例文件](docs/examples/) - 各种格式示例
+- 🧪 [测试文件](tests/) - 功能测试样本
 
 ## 🚀 快速开始
 
@@ -271,6 +275,7 @@ md2docx-mcp-server/
 
 ## 📈 版本历史
 
+- **v1.2.0** - 🔧 集成 MD2LaTeX 改进版，支持 LaTeX/PDF 转换，修复表格渲染问题
 - **v1.1.0** - 🚀 集成 md2pptx，支持统一 DOCX/PPTX 转换
 - **v1.0.0** - 🎉 首个稳定版本，支持 DOCX 转换
 

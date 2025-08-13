@@ -1,0 +1,83 @@
+\documentclass[UTF8, a4paper, 12pt, oneside]{ctexbook}
+
+% 中文书籍包
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+
+% 代码高亮
+\usepackage{listings}
+\usepackage{xcolor}
+
+% 页面设置
+\geometry{
+    left=2.5cm,
+    right=2.5cm,
+    top=2.5cm,
+    bottom=2.5cm,
+    headheight=15pt
+}
+
+% 中文字体设置
+\setCJKmainfont{SimSun}
+\setCJKsansfont{SimHei}
+\setCJKmonofont{FangSong}
+
+% 页眉页脚
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[C]{\leftmark}
+\fancyfoot[C]{\thepage}
+
+% 代码样式设置
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    showstringspaces=false,
+    commentstyle=\color{gray}\kaishu,
+    keywordstyle=\color{blue}\bfseries,
+    stringstyle=\color{red},
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    backgroundcolor=\color{gray!10}
+}
+
+% 超链接设置
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    citecolor=green,
+    bookmarks=true,
+    bookmarksopen=true
+}
+
+% 章节标题格式
+\ctexset{
+    chapter={
+        format=\Large\bfseries\centering,
+        name={第,章},
+        number=\chinese{chapter},
+    },
+    section={
+        format=\large\bfseries,
+    },
+    subsection={
+        format=\normalsize\bfseries,
+    }
+}
+
+\begin{document}
+
+<!-- INSERT_CONTENT -->
+
+\end{document}

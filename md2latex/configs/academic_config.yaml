@@ -1,0 +1,66 @@
+# 学术论文配置
+# 针对学术论文的特殊需求进行优化
+
+# === 学术标题 ===
+heading: |
+  
+  \<heading_type>{<text>}
+
+# === 学术图片 ===
+image: |
+  \begin{figure}[htbp]
+      \centering
+      \includegraphics[width=0.7\textwidth]{<url>}
+      \caption{<alt>}
+      \label{fig:<label>}
+  \end{figure}
+
+# === 学术表格 ===
+table: |
+  
+  \begin{table}[htbp]
+      \centering
+      \caption{<counter>}
+      \label{tab:table<counter>}
+      \begin{tabular}{<alignment>}
+          \toprule
+          <header>
+          \midrule
+          <body>
+          \bottomrule
+      \end{tabular}
+  \end{table}
+
+# === 学术代码 ===
+block_code_with_lang: |
+  
+  \begin{lstlisting}[
+      language=<lang>,
+      basicstyle=\ttfamily\footnotesize,
+      breaklines=true,
+      showstringspaces=false,
+      commentstyle=\color{gray}\itshape,
+      keywordstyle=\color{blue}\bfseries,
+      stringstyle=\color{red},
+      frame=tb,
+      numbers=left,
+      numberstyle=\tiny\color{gray},
+      captionpos=b
+  ]
+  <code>
+  \end{lstlisting}
+
+# === 学术数学公式（带编号）===
+block_math: |
+  
+  \begin{equation}
+  <text>
+  \label{eq:equation<counter>}
+  \end{equation}
+
+# === 学术引用 ===
+block_quote: |
+  
+  \begin{quote}
+  \itshape <text>
+  \end{quote}

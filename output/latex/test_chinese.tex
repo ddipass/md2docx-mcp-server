@@ -1,0 +1,146 @@
+\documentclass[UTF8, a4paper, 12pt]{ctexart}
+
+% 基础包
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{float}
+\usepackage{hyperref}
+
+% 代码高亮
+\usepackage{listings}
+\usepackage{xcolor}
+
+% 页面设置
+\geometry{
+    left=2.5cm,
+    right=2.5cm,
+    top=2.5cm,
+    bottom=2.5cm
+}
+
+% 代码样式设置
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    showstringspaces=false,
+    commentstyle=\color{gray},
+    keywordstyle=\color{blue},
+    stringstyle=\color{red},
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny\color{gray}
+}
+
+% 超链接设置
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    citecolor=green
+}
+
+\begin{document}
+
+
+\section{中文测试文档}
+
+
+\subsection{简介}
+
+这是一个用于测试 MD2LaTeX 中文支持的示例文档。
+
+
+\subsection{基本格式测试}
+
+
+\subsubsection{文本格式}
+
+这是普通文本，包含\textbf{粗体文本}和\emph{斜体文本}。
+
+
+\subsubsection{列表测试}
+
+
+\paragraph{有序列表}
+
+\paragraph{无序列表}
+
+\subsubsection{代码块测试}
+
+
+\begin{lstlisting}[
+    language=python,
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    showstringspaces=false,
+    commentstyle=\color{gray},
+    keywordstyle=\color{blue},
+    stringstyle=\color{red},
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny\color{gray}
+]
+def hello_world():
+    print("你好，世界！")
+    return "Hello, World!"
+
+\end{lstlisting}
+
+
+\subsubsection{数学公式测试}
+
+
+行内公式：$\alpha + \beta = \gamma$
+
+
+块级公式：
+
+\begin{equation}
+\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
+\end{equation}
+
+
+\subsubsection{表格测试}
+
+
+\begin{table}[H]
+    \centering
+    \caption{1}
+    \label{tab:table1}
+    \begin{tabular}{|l|l|l|}
+        \toprule
+        \textbf{姓名} & \textbf{年龄} & \textbf{职业} \\
+        \midrule
+        张三 & 25 & 工程师 \\
+        李四 & 30 & 设计师 \\
+        王五 & 28 & 产品经理 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsubsection{引用测试}
+
+
+\begin{quote}
+\kaishu 
+这是一个中文引用块。
+
+
+包含多行内容的引用。
+
+\end{quote}
+
+
+\subsection{结论}
+
+
+MD2LaTeX 工具能够很好地处理中文内容，包括各种格式和特殊字符。
+
+
+\end{document}

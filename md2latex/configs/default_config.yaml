@@ -1,0 +1,97 @@
+# 改进版 MD2LaTeX 配置文件
+# 支持更多功能和更好的中文处理
+
+# === 基本文本 ===
+text: "<text>"
+emphasis: "\\emph{<text>}"
+strong: "\\textbf{<text>}"
+link: "\\href{<url>}{<text>}"
+codespan: "\\texttt{<text>}"
+linebreak: "\\\\"
+softbreak: " "
+
+# === 图片处理 ===
+image: |
+  \begin{figure}[H]
+      \centering
+      \includegraphics[width=0.8\textwidth]{<url>}
+      \caption{<alt>}
+      \label{fig:<label>}
+  \end{figure}
+
+# === 段落和标题 ===
+paragraph: |
+  
+  <text>
+
+heading: |
+  
+  \<heading_type>{<text>}
+
+blank_line: "\n"
+thematic_break: "\\noindent\\rule{\\textwidth}{1pt}"
+block_text: "<text>"
+
+# === 代码块 - 改进版 ===
+block_code: |
+  
+  \begin{verbatim}
+  <code>
+  \end{verbatim}
+
+block_code_with_lang: |
+  
+  \begin{lstlisting}[language=<lang>, basicstyle=\ttfamily\small, breaklines=true]
+  <code>
+  \end{lstlisting}
+
+# === 引用 ===
+block_quote: |
+  
+  \begin{quote}
+  <text>
+  \end{quote}
+
+# === 列表 ===
+ordered_list: |
+  
+  \begin{enumerate}
+  <text>
+  \end{enumerate}
+
+unordered_list: |
+  
+  \begin{itemize}
+  <text>
+  \end{itemize}
+
+list_item: "\\item <text>"
+
+# === 数学公式 ===
+inline_math: "$<text>$"
+
+block_math: |
+  
+  \begin{equation}
+  <text>
+  \end{equation}
+
+# === 表格 - 大幅改进 ===
+table: |
+  
+  \begin{table}[H]
+      \centering
+      \caption{表格 <counter>}
+      \label{tab:table<counter>}
+      \begin{tabular}{<alignment>}
+          \toprule
+          <header>
+          \midrule
+          <body>
+          \bottomrule
+      \end{tabular}
+  \end{table}
+
+# === HTML 兼容 ===
+inline_html: "<text>"
+block_html: "<html>"

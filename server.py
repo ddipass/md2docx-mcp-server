@@ -1028,6 +1028,354 @@ async def get_conversion_status() -> str:
     except Exception as e:
         return f"❌ 获取状态失败: {str(e)}"
 
+# ===== MD2LATEX 专用工具 =====
+
+@mcp.tool()
+async def convert_md_to_latex(
+    input_file: str,
+    config: str = "default",
+    template: str = "basic",
+    output_file: Optional[str] = None
+) -> str:
+    """
+    转换 Markdown 到 LaTeX (改进版)
+    
+    Args:
+        input_file: 输入的 Markdown 文件路径
+        config: 配置类型 (default/chinese/academic)
+        template: 模板类型 (basic/academic/chinese_book)
+        output_file: 输出文件路径（可选）
+        
+    Returns:
+        转换结果信息
+        
+    Use cases:
+        - 基础转换: convert_md_to_latex("/path/to/file.md")
+        - 中文文档: convert_md_to_latex("/path/to/file.md", "chinese", "basic")
+        - 学术论文: convert_md_to_latex("/path/to/file.md", "academic", "academic")
+        - 中文书籍: convert_md_to_latex("/path/to/file.md", "chinese", "chinese_book")
+    """
+    
+    try:
+        from core.md2latex_adapter_v2 import MD2LaTeXAdapterV2 as MD2LaTeXAdapter
+        
+        # 检查输入文件
+        input_path = Path(input_file)
+        if not input_path.exists():
+            return f"❌ 输入文件不存在: {input_file}"
+        
+        # 创建适配器
+        adapter = MD2LaTeXAdapter()
+        
+        if not adapter.available:
+            return "❌ MD2LaTeX 模块不可用，请检查安装"
+        
+        # 执行转换
+        output_path = adapter.convert_file(
+            input_file=input_file,
+            output_file=output_file,
+            config=config,
+            template=template
+        )
+        
+        # 获取文件信息
+        with open(input_file, 'r', encoding='utf-8') as f:
+            md_content = f.read()
+        
+        with open(output_path, 'r', encoding='utf-8') as f:
+            latex_content = f.read()
+        
+        return f"""✅ LaTeX 转换成功! (改进版 v2.0.0)
+
+📄 输入文件: {input_file}
+📄 输出文件: {output_path}
+⚙️  配置类型: {config}
+🎨 模板类型: {template}
+📝 内容长度: {len(md_content)} 字符
+📊 LaTeX 长度: {len(latex_content)} 字符
+
+🎯 新功能:
+- ✅ 支持无限级别标题
+- ✅ 改进的表格处理
+- ✅ 更好的中文支持
+- ✅ 代码高亮支持
+
+💡 下一步: 使用 compile_latex_to_pdf 编译为 PDF"""
+    
+    except ImportError as e:
+        return f"❌ MD2LaTeX 模块导入失败: {str(e)}"
+    except Exception as e:
+        return f"❌ 转换失败: {str(e)}"
+
+@mcp.tool()
+async def compile_latex_to_pdf(
+    latex_file: str,
+    engine: str = "xelatex",
+    output_dir: Optional[str] = None,
+    clean_temp: bool = True
+) -> str:
+    """
+    编译 LaTeX 文件为 PDF
+    
+    Args:
+        latex_file: LaTeX 文件路径
+        engine: 编译引擎 (xelatex/pdflatex/lualatex)
+        output_dir: 输出目录（可选）
+        clean_temp: 是否清理临时文件
+        
+    Returns:
+        编译结果信息
+        
+    Use cases:
+        - 基础编译: compile_latex_to_pdf("/path/to/file.tex")
+        - 指定引擎: compile_latex_to_pdf("/path/to/file.tex", "pdflatex")
+        - 指定输出目录: compile_latex_to_pdf("/path/to/file.tex", output_dir="/path/to/output")
+    """
+    
+    try:
+        from core.latex_compiler import LaTeXCompiler
+        
+        # 检查输入文件
+        latex_path = Path(latex_file)
+        if not latex_path.exists():
+            return f"❌ LaTeX 文件不存在: {latex_file}"
+        
+        # 创建编译器
+        compiler = LaTeXCompiler()
+        
+        # 检查编译引擎是否可用
+        if engine not in compiler.available_engines:
+            return f"❌ 编译引擎 {engine} 不可用。可用引擎: {', '.join(compiler.available_engines)}"
+        
+        # 设置默认输出目录
+        if output_dir is None:
+            # 默认输出到 output/latex 目录
+            project_root = Path(__file__).parent
+            output_dir = str((project_root / "output" / "latex").resolve())
+        
+        # 确保使用绝对路径
+        latex_path = Path(latex_file).resolve()
+        
+        # 执行编译
+        result = compiler.compile(
+            latex_file=str(latex_path),
+            engine=engine,
+            output_dir=output_dir,
+            clean_temp=clean_temp
+        )
+        
+        if result['success']:
+            message = f"""✅ PDF 编译成功!
+
+📄 LaTeX 文件: {latex_file}
+📄 PDF 文件: {result['output_file']}
+🔧 编译引擎: {result['engine']}
+🔄 编译次数: {result['runs']}"""
+            
+            if result.get('warnings'):
+                message += f"\n⚠️  警告数量: {len(result['warnings'])}"
+            
+            return message
+        else:
+            return f"""❌ PDF 编译失败!
+
+📄 LaTeX 文件: {latex_file}
+🔧 编译引擎: {engine}
+❌ 错误信息: {result['error']}
+
+💡 提示: 检查 LaTeX 语法或尝试其他编译引擎"""
+    
+    except ImportError:
+        return "❌ LaTeX 编译器模块未正确安装"
+    except Exception as e:
+        return f"❌ 编译过程异常: {str(e)}"
+
+@mcp.tool()
+async def convert_md_to_pdf_direct(
+    input_file: str,
+    config: str = "default",
+    template: str = "basic",
+    engine: str = "xelatex",
+    keep_latex: bool = False
+) -> str:
+    """
+    直接从 Markdown 生成 PDF（一键转换）改进版
+    
+    Args:
+        input_file: 输入的 Markdown 文件路径
+        config: 配置类型 (default/chinese/academic)
+        template: 模板类型 (basic/academic/chinese_book)
+        engine: 编译引擎 (xelatex/pdflatex/lualatex)
+        keep_latex: 是否保留中间的 LaTeX 文件
+        
+    Returns:
+        转换结果信息
+        
+    Use cases:
+        - 一键转换: convert_md_to_pdf_direct("/path/to/file.md")
+        - 中文文档: convert_md_to_pdf_direct("/path/to/file.md", "chinese", "basic")
+        - 学术论文: convert_md_to_pdf_direct("/path/to/file.md", "academic", "academic")
+        - 中文书籍: convert_md_to_pdf_direct("/path/to/file.md", "chinese", "chinese_book")
+    """
+    
+    try:
+        # 第一步：转换为 LaTeX
+        latex_result = await convert_md_to_latex(input_file, config, template)
+        if "❌" in latex_result:
+            return latex_result
+        
+        # 第二步：编译为 PDF
+        # LaTeX 文件现在在 output/latex/ 目录中
+        project_root = Path(__file__).parent
+        latex_file = str((project_root / "output" / "latex" / f"{Path(input_file).stem}.tex").resolve())
+        pdf_result = await compile_latex_to_pdf(latex_file, engine)
+        
+        # 第三步：清理中间文件（如果需要）
+        if not keep_latex:
+            try:
+                Path(latex_file).unlink()
+                # 清理其他编译产生的文件（在 output/latex/ 目录中）
+                latex_path = Path(latex_file)
+                base_path = latex_path.with_suffix('')
+                for ext in ['.aux', '.log', '.out', '.toc', '.lof', '.lot']:
+                    try:
+                        (base_path.with_suffix(ext)).unlink()
+                    except:
+                        pass
+            except Exception:
+                pass  # 忽略删除失败
+        
+        if "✅" in pdf_result:
+            # PDF 文件在 output/latex/ 目录中
+            pdf_file = str(project_root / "output" / "latex" / f"{Path(input_file).stem}.pdf")
+            return f"""✅ Markdown 到 PDF 转换完成! (改进版 v2.0.0)
+
+📄 输入文件: {input_file}
+📄 PDF 文件: {pdf_file}
+⚙️  配置类型: {config}
+🎨 模板类型: {template}
+🔧 编译引擎: {engine}
+📝 中间文件: {'保留' if keep_latex else '已清理'}
+
+🎯 转换流程: Markdown → LaTeX → PDF
+🚀 新功能: 支持无限级别标题、改进表格处理、更好中文支持
+📁 输出目录: output/latex/"""
+        else:
+            return pdf_result
+    
+    except Exception as e:
+        return f"❌ 一键转换失败: {str(e)}"
+
+@mcp.tool()
+async def check_md2latex_status() -> str:
+    """
+    检查 MD2LaTeX 模块状态 (改进版)
+    
+    Returns:
+        MD2LaTeX 模块状态信息
+        
+    Use cases:
+        - 检查状态: check_md2latex_status()
+    """
+    
+    try:
+        from core.md2latex_adapter_v2 import MD2LaTeXAdapterV2 as MD2LaTeXAdapter, UpstreamManager
+        from core.latex_compiler import LaTeXCompiler
+        
+        # 检查适配器状态
+        adapter = MD2LaTeXAdapter()
+        adapter_status = adapter.get_status()
+        
+        # 检查编译器状态
+        compiler = LaTeXCompiler()
+        compiler_status = compiler.get_status()
+        
+        # 检查上游状态
+        upstream_manager = UpstreamManager()
+        upstream_status = upstream_manager.check_updates()
+        
+        status = f"""🔍 MD2LaTeX 模块状态 (改进版 v2.0.0)
+
+📦 自维护版本信息:
+- 状态: {'✅ 正常可用' if adapter_status['available'] else '❌ 不可用'}
+- 版本: {adapter_status['version']}
+- 描述: {adapter_status['description']}
+- 项目路径: {adapter_status['md2latex_path']}
+
+⚙️  支持的配置:
+{chr(10).join(f'- {config}: {desc}' for config, desc in adapter.get_available_configs().items())}
+
+🎨 支持的模板:
+{chr(10).join(f'- {template}: {desc}' for template, desc in adapter.get_available_templates().items())}
+
+🔧 LaTeX 编译器:
+- 可用性: {'✅ 正常可用' if compiler_status['latex_available'] else '❌ 不可用'}
+- 默认引擎: {compiler_status['default_engine']}
+- 支持的编译引擎: {', '.join(compiler_status['supported_engines'])}
+
+🚀 新功能特性:
+{chr(10).join(f'- ✅ {feature}' for feature in adapter_status['features'])}
+
+📊 上游状态:
+- 管理方式: {upstream_status['status']}
+- 说明: {upstream_status['message']}
+
+💡 使用建议:
+- 中文文档: 使用 config="chinese", template="basic"
+- 学术论文: 使用 config="academic", template="academic"  
+- 中文书籍: 使用 config="chinese", template="chinese_book"
+- 一般文档: 使用 config="default", template="basic"
+
+MD2LaTeX 改进版完全正常，支持无限级别标题和改进的表格处理！"""
+        
+        return status
+    
+    except ImportError as e:
+        return f"❌ MD2LaTeX 模块导入失败: {str(e)}\n💡 请检查 md2latex 模块是否正确安装"
+    except Exception as e:
+        return f"❌ 状态检查失败: {str(e)}"
+
+@mcp.tool()
+async def update_md2latex_upstream() -> str:
+    """
+    更新上游 md2latex 项目 (改进版)
+    
+    Returns:
+        更新结果信息
+        
+    Use cases:
+        - 检查更新: update_md2latex_upstream()
+    """
+    
+    try:
+        from core.md2latex_adapter_v2 import UpstreamManager
+        
+        manager = UpstreamManager()
+        
+        # 检查更新状态
+        update_status = manager.check_updates()
+        
+        return f"""📊 MD2LaTeX 更新状态 (改进版)
+
+🔄 管理方式: {update_status['status']}
+📝 说明: {update_status['message']}
+📦 当前版本: {update_status['version']}
+
+💡 重要提示:
+当前使用自维护版本的 MD2LaTeX，具有以下优势：
+- ✅ 支持无限级别标题
+- ✅ 改进的表格处理
+- ✅ 更好的中文支持
+- ✅ 代码高亮支持
+- ✅ 多种配置和模板
+
+如需更新功能，请手动修改 md2latex/ 目录下的代码。"""
+    
+    except ImportError:
+        return "❌ 上游管理器模块未正确安装"
+    except Exception as e:
+        return f"❌ 更新检查异常: {str(e)}"
+
 # ===== MD2PPTX 专用工具 =====
 
 @mcp.tool()
@@ -1932,6 +2280,12 @@ def main():
     print("    - create_md2pptx_content: 智能生成PPTX内容")
     print("    - show_md2pptx_examples: 显示格式示例")
     print("    - get_md2pptx_format_guide: 获取格式规范指南")
+    print("  📄 MD2LaTeX 专用工具:")
+    print("    - convert_md_to_latex: 转换MD到LaTeX")
+    print("    - compile_latex_to_pdf: 编译LaTeX到PDF")
+    print("    - convert_md_to_pdf_direct: 一键MD到PDF转换")
+    print("    - check_md2latex_status: 检查MD2LaTeX状态")
+    print("    - update_md2latex_upstream: 更新上游项目")
     print("  ⚙️  配置管理工具:")
     print("    - quick_config_default_format: 设置默认格式")
     print("    - quick_config_pptx_template: 设置PPTX模板")
@@ -1942,9 +2296,9 @@ def main():
     print("  📁 文件管理工具:")
     print("    - list_markdown_files: 列出文件")
     print("    - validate_markdown_file: 验证文件")
-    print("✅ 改进版服务器准备就绪 - 支持 DOCX 和 PPTX 转换")
-    print("💡 新增特性: MD2PPTX 格式验证、内容生成和智能修复")
-    print("🎯 MD2PPTX 特殊格式要求已完全支持！")
+    print("✅ 改进版服务器准备就绪 - 支持 DOCX、PPTX 和 LaTeX/PDF 转换")
+    print("💡 新增特性: MD2LaTeX 转换，基于 VMIJUNV/md-to-latex 项目")
+    print("🎯 支持格式: Markdown → DOCX/PPTX/LaTeX/PDF")
 
 if __name__ == "__main__":
     main()
